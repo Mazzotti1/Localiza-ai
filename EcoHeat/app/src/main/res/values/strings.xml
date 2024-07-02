@@ -1,0 +1,52 @@
+<resources>
+    <!--    Main-->
+    <string name="app_name">Localiza ai!</string>
+    <string name="title_activity_register_screen">RegisterScreen</string>
+    <string name="start">Start</string>
+
+    <!--    Register-->
+    <string name="name_title">Name</string>
+    <string name="name_placeholder">Type your name</string>
+    <string name="password_title">Password</string>
+    <string name="repassword_title">Password confirmation</string>
+    <string name="password_placeholder">Type your password</string>
+    <string name="rePassword_placeholder">Type your password again</string>
+    <string name="btn_register">Register</string>
+    <string name="btn_login">Login</string>
+    <string name="has_account">I already have a registered account!</string>
+    <string name="hasnt_account">I don\'t have a registered account!</string>
+    <string name="fill_all_fields">Please complete all the fields</string>
+    <string name="passwords_match">Passwords aren\'t the same</string>
+
+    <!--    Settings-->
+    <string name="settings_title">Settings</string>
+    <string name="about_title">About</string>
+    <string name="change_password">Change password</string>
+    <string name="logout">Logout</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_desactivate">Desactivate account</string>
+
+    <!--    About-->
+    <string name="about_text">Discover your next fun destination with our event location app. Explore parties, shows, exhibitions, and more on an intuitive map. Never miss an opportunity to have fun!</string>
+    <string name="about_by">App developed by Gabriel Mazzotti</string>
+    <string name="social_error">Wasn\'t possible to open the chosen social</string>
+
+    <!--    Dialog Logout-->
+    <string name="logout_title">Cofirm logout</string>
+    <string name="logout_cofirm">Are you sure you want to log out?</string>
+    <string name="logout_yes">Yes</string>
+    <string name="logout_cancel">Cancel</string>
+
+    <!--    Dialog Delete-->
+    <string name="delete_title">Confirm Delete</string>
+    <string name="delete_cofirm">Are you sure you want to DELETE PERMANENTLY your account?</string>
+    <string name="delete_yes">Yes</string>
+    <string name="delete_cancel">Cancel</string>
+
+    <!--    Dialog Desactive-->
+    <string name="desactive_title">Confirm Desactivate</string>
+    <string name="desactive_cofirm">Are you sure you want to desactivate your account?</string>
+    <string name="desactive_yes">Yes</string>
+    <string name="desactive_cancel">Cancel</string>
+
+</resources>

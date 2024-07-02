@@ -1,0 +1,52 @@
+<resources>
+    <!--    Main-->
+    <string name="app_name">Localiza ai!</string>
+    <string name="title_activity_register_screen">Tela de Registro</string>
+    <string name="start">Iniciar</string>
+
+    <!--    Register-->
+    <string name="name_title">Nome</string>
+    <string name="name_placeholder">Digite seu nome</string>
+    <string name="password_title">Senha</string>
+    <string name="repassword_title">Confirmação da senha</string>
+    <string name="password_placeholder">Digite sua senha</string>
+    <string name="rePassword_placeholder">Digite novamente sua senha</string>
+    <string name="btn_register">Registrar</string>
+    <string name="btn_login">Login</string>
+    <string name="has_account">Já tenho uma conta registrada!</string>
+    <string name="hasnt_account">Ainda não tenho uma conta registrada!</string>
+    <string name="fill_all_fields">Por favor, preencha todos os campos</string>
+    <string name="passwords_match">As senhas não coincidem</string>
+
+    <!--    Settings-->
+    <string name="settings_title">Configurações</string>
+    <string name="about_title">Sobre</string>
+    <string name="change_password">Trocar senha</string>
+    <string name="logout">Sair</string>
+    <string name="delete_account">Excluir conta</string>
+    <string name="delete_desactivate">Desativar conta</string>
+
+    <!--    About-->
+    <string name="about_text">Descubra o seu próximo destino de diversão com nosso aplicativo de localização de eventos. Explore festas, shows, exposições e muito mais em um mapa intuitivo. Nunca perca uma oportunidade de se divertir!</string>
+    <string name="about_by">App desenvolvido por Gabriel Mazzotti</string>
+    <string name="social_error">Não foi possível abrir a rede social escolhida</string>
+
+    <!--    Dialog Logout-->
+    <string name="logout_title">Confirmar saída</string>
+    <string name="logout_cofirm">Tem certeza de que deseja sair da conta?</string>
+    <string name="logout_yes">Sim</string>
+    <string name="logout_cancel">Cancelar</string>
+
+    <!--    Dialog Delete-->
+    <string name="delete_title">Confirmar Exclusão</string>
+    <string name="delete_cofirm">Tem certeza de que deseja DELETAR PERMANENTEMENTE sua conta?</string>
+    <string name="delete_yes">Sim</string>
+    <string name="delete_cancel">Cancelar</string>
+
+    <!--    Dialog Desactive-->
+    <string name="desactive_title">Confirmar Desativação</string>
+    <string name="desactive_cofirm">Tem certeza de que deseja desativar sua conta?</string>
+    <string name="desactive_yes">Sim</string>
+    <string name="desactive_cancel">Cancelar</string>
+
+</resources>

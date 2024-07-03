@@ -129,47 +129,53 @@ class MainActivityViewModel(private val context: Context) : ViewModel() {
             val result = weatherRepository.fetchWeatherData(q, hour, days, lang)
 
             result.onSuccess { responseBody ->
-                println("Resultado da consulta do tempo é: $result")
                 Log.d("WeatherApi", "Resultado da consulta do tempo é: ${result.toString()}")
             }.onFailure { exception ->
-                println("Error: ${exception.message}")
                 Log.d("WeatherApi", "Error: ${exception.message}")
             }
         }
     }
 
-    fun loadTrafficProps(context: Context){
+    fun loadTrafficProps(context: Context, location: Location){
         val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
 
-        val lat = -29.916772
-        val lon = -51.166009
+        val lat = location.latitude
+        val lon = location.longitude
 
         viewModelScope.launch(Dispatchers.IO) {
             val result = trafficRepository.fetchTrafficData(lat, lon)
 
             result.onSuccess { responseBody ->
-                println("Resultado da consulta do Trafego é: $result")
                 Log.d("TrafficApi", "Resultado da consulta do Trafego é: ${result.toString()}")
             }.onFailure { exception ->
-                println("Error: ${exception.message}")
                 Log.d("TrafficApi", "Error: ${exception.message}")
             }
         }
     }
 
-    fun loadEventsProps(context: Context){
+    fun loadEventsProps(context: Context, lang : String){
         val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
 
-        val localRequest = "pt-br.brazilian"
+        val localRequest : String
+        when (lang) {
+            "pt" -> {
+                localRequest = "pt-br.brazilian"
+            }
+            "en" -> {
+                localRequest = "en.usa"
+            }
+            else -> {
+                localRequest = "pt-br.brazilian"
+            }
+        }
+
 
         viewModelScope.launch(Dispatchers.IO) {
             val result = eventsRepository.fetchEventsData(localRequest)
 
             result.onSuccess { responseBody ->
-                println("Resultado da consulta do Trafego é: $result")
-                Log.d("EventsApi", "Resultado da consulta do Trafego é: ${result.toString()}")
+                Log.d("EventsApi", "Resultado da consulta de eventos é: ${result.toString()}")
             }.onFailure { exception ->
-                println("Error: ${exception.message}")
                 Log.d("EventsApi", "Error: ${exception.message}")
             }
         }

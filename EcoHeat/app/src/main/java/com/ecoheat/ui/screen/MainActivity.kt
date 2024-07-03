@@ -118,14 +118,14 @@ class MainActivity : ComponentActivity() {
 
         LaunchedEffect(permissionState) {
             if (permissionState.allPermissionsGranted) {
-                prepareDataForWeatherApi(context,viewModel, language)
+                prepareDataForApi(context,viewModel, language)
             }else{
                 permissionState.launchMultiplePermissionRequest()
             }
         }
     }
 
-    private fun prepareDataForWeatherApi(context: Context, viewModel: MainActivityViewModel, language: String) {
+    private fun prepareDataForApi(context: Context, viewModel: MainActivityViewModel, language: String) {
         viewModel.startLocationUpdates(fusedLocationProviderClient, context) { location ->
             locationLatLng = location
             val cityName = viewModel.getCityNameFromLocation(context, locationLatLng!!).toString()
@@ -135,7 +135,10 @@ class MainActivity : ComponentActivity() {
             val lang = language
 
             val weatherData = WeatherRequest(cityName, days, hour, lang)
+
             viewModel.loadWeatherProps(context, weatherData)
+            viewModel.loadTrafficProps(context, location)
+            viewModel.loadEventsProps(context, lang)
         }
     }
 

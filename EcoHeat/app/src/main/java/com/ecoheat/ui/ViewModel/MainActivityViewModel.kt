@@ -13,7 +13,9 @@ import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -29,7 +31,9 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.JWTDecodeException
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.ecoheat.Model.Login
+import com.ecoheat.Model.TrafficResponse
 import com.ecoheat.Model.WeatherRequest
+import com.ecoheat.Model.WeatherResponse
 import com.ecoheat.R
 import com.ecoheat.data.repository.EventsRepository
 import com.ecoheat.data.repository.PlacesRepository
@@ -42,6 +46,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.Task
+import com.google.gson.Gson
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -61,6 +66,10 @@ class MainActivityViewModel(private val context: Context) : ViewModel() {
     private val trafficRepository = TrafficRepository(context)
     private val eventsRepository = EventsRepository(context)
     private val placesRepository = PlacesRepository(context)
+
+
+    var weatherResponse by mutableStateOf<WeatherResponse?>(null)
+    var trafficResponse by mutableStateOf<TrafficResponse?>(null)
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
@@ -129,6 +138,10 @@ class MainActivityViewModel(private val context: Context) : ViewModel() {
             val result = weatherRepository.fetchWeatherData(q, hour, days, lang)
 
             result.onSuccess { responseBody ->
+                val weatherJson = responseBody.toString()
+                val gson = Gson()
+                weatherResponse = gson.fromJson(weatherJson, WeatherResponse::class.java)
+
                 Log.d("WeatherApi", "Resultado da consulta do tempo é: ${result.toString()}")
             }.onFailure { exception ->
                 Log.d("WeatherApi", "Error: ${exception.message}")
@@ -146,6 +159,11 @@ class MainActivityViewModel(private val context: Context) : ViewModel() {
             val result = trafficRepository.fetchTrafficData(lat, lon)
 
             result.onSuccess { responseBody ->
+
+                val trafficJson = responseBody.toString()
+                val gson = Gson()
+                trafficResponse = gson.fromJson(trafficJson, TrafficResponse::class.java)
+
                 Log.d("TrafficApi", "Resultado da consulta do Trafego é: ${result.toString()}")
             }.onFailure { exception ->
                 Log.d("TrafficApi", "Error: ${exception.message}")
@@ -177,83 +195,6 @@ class MainActivityViewModel(private val context: Context) : ViewModel() {
                 Log.d("EventsApi", "Resultado da consulta de eventos é: ${result.toString()}")
             }.onFailure { exception ->
                 Log.d("EventsApi", "Error: ${exception.message}")
-            }
-        }
-    }
-
-    fun loadPlacesProps(context: Context){
-        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
-
-        val lat = "-29.917928"
-        val long = "-51.160637"
-        val radius = "350"
-        val sort = "POPULARITY"
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = placesRepository.fetchPlacesData(lat,long,radius,sort)
-
-            result.onSuccess { responseBody ->
-                println("Resultado da consulta do Trafego é: $result")
-                Log.d("PlacesApi", "Resultado da consulta do Places é: ${result.toString()}")
-            }.onFailure { exception ->
-                println("Error: ${exception.message}")
-                Log.d("PlacesApi", "Error: ${exception.message}")
-            }
-        }
-    }
-
-    fun loadSpecificPlacesProps(context: Context){
-        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
-
-        val id = "5da27c64227dcb000880cc7c"
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = placesRepository.fetchSpecificPlacesData(id)
-
-            result.onSuccess { responseBody ->
-                println("Resultado da consulta do Trafego é: $result")
-                Log.d("PlacesApi", "Resultado da consulta do Places Specific é: ${result.toString()}")
-            }.onFailure { exception ->
-                println("Error: ${exception.message}")
-                Log.d("PlacesApi", "Error: ${exception.message}")
-            }
-        }
-    }
-
-    fun loadPlacesByNameProps(context: Context){
-        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
-
-        val lat = "-29.917928"
-        val long = "-51.160637"
-        val name = "Taishi"
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = placesRepository.fetchPlaceByNameData(lat,long,name)
-
-            result.onSuccess { responseBody ->
-                println("Resultado da consulta do Trafego é: $result")
-                Log.d("PlacesApi", "Resultado da consulta do Places by Name é: ${result.toString()}")
-            }.onFailure { exception ->
-                println("Error: ${exception.message}")
-                Log.d("PlacesApi", "Error: ${exception.message}")
-            }
-        }
-    }
-
-    fun loadPlacesTipsProps(context: Context){
-        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
-
-        val id = "5da27c64227dcb000880cc7c"
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = placesRepository.fetchPlacesTipsData(id)
-
-            result.onSuccess { responseBody ->
-                println("Resultado da consulta do Trafego é: $result")
-                Log.d("PlacesApi", "Resultado da consulta do Places Tips é: ${result.toString()}")
-            }.onFailure { exception ->
-                println("Error: ${exception.message}")
-                Log.d("PlacesApi", "Error: ${exception.message}")
             }
         }
     }
@@ -303,6 +244,31 @@ class MainActivityViewModel(private val context: Context) : ViewModel() {
             e.printStackTrace()
             null
         }
+    }
+
+    fun checkTrafficStatus(): Int {
+        val currentSpeed = trafficResponse?.currentSpeed
+        val freeFlowSpeed = trafficResponse?.freeFlowSpeed
+        val currentTravelTime = trafficResponse?.currentTravelTime
+        val freeFlowTravelTime = trafficResponse?.freeFlowTravelTime
+        val roadClosure = trafficResponse?.roadClosure
+
+        return when {
+            roadClosure == true -> R.drawable.ic_car_red // Ícone vermelho para fechamento de estrada
+
+            currentSpeed != null && freeFlowSpeed != null && currentSpeed < freeFlowSpeed * 0.5 -> R.drawable.ic_car_red // Ícone vermelho para trânsito muito lento
+
+            currentSpeed != null && freeFlowSpeed != null && currentSpeed < freeFlowSpeed * 0.75 -> R.drawable.ic_car_yellow // Ícone amarelo para trânsito moderadamente lento
+
+            currentTravelTime != null && freeFlowTravelTime != null && currentTravelTime > freeFlowTravelTime * 1.5 -> R.drawable.ic_car_red // Ícone vermelho para tempo de viagem muito alto
+
+            currentTravelTime != null && freeFlowTravelTime != null && currentTravelTime > freeFlowTravelTime * 1.25 -> R.drawable.ic_car_yellow // Ícone amarelo para tempo de viagem moderadamente alto
+
+            currentSpeed != null && freeFlowSpeed != null -> R.drawable.ic_car_green // Ícone verde para trânsito bom
+
+            else -> R.drawable.ic_car_unknown // Ícone desconhecido
+        }
+
     }
 
 }

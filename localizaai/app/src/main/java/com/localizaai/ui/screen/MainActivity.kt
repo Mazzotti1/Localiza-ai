@@ -207,14 +207,16 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Text(
                         text = viewModel.weatherResponse?.current?.temp_c?.let {"$it°C" } ?: "",
-                        fontSize = 36.sp,
+                        fontSize = 26.sp,
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Spacer(modifier = Modifier.width(36.dp))
                     val icon = remember { mutableStateOf(R.drawable.ic_car_unknown) }
-                    LaunchedEffect(Unit) {
-                        val iconResource = viewModel.checkTrafficStatus()
-                        icon.value = iconResource
+                    LaunchedEffect(viewModel.trafficResponse) {
+                        if (viewModel.trafficResponse != null) {
+                            val iconResource = viewModel.checkTrafficStatus()
+                            icon.value = iconResource
+                        }
                     }
                     Icon(
                         painter = painterResource(id = icon.value),

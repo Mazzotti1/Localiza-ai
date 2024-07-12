@@ -76,19 +76,24 @@ import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberMarkerState
+import com.localizaai.Model.WeatherRequest
+import com.localizaai.ui.ViewModel.MainActivityViewModel
+import com.localizaai.ui.factory.MainActivityViewModelFactory
+import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.Calendar
 import kotlin.coroutines.resume
 
 
 class MenuActivity : ComponentActivity() {
 
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val viewModel: MenuScreenViewModel = viewModel()
             val context = applicationContext
+            val viewModel: MenuScreenViewModel = viewModel(factory = MenuScreenViewModelFactory(context))
+
             val navController = rememberNavController()
 
             fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
@@ -115,6 +120,38 @@ class MenuActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun RequestLocationPermissions(
+    context: Context,
+    viewModel: MenuScreenViewModel,
+    fusedLocationProviderClient: FusedLocationProviderClient,
+    ) {
+    val permissionState = rememberMultiplePermissionsState(
+        permissions = listOf(
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+    )
+
+    LaunchedEffect(permissionState) {
+        if (permissionState.allPermissionsGranted) {
+            prepareDataForApi(context, viewModel, fusedLocationProviderClient)
+        }else{
+            permissionState.launchMultiplePermissionRequest()
+        }
+    }
+}
+
+private fun prepareDataForApi(
+    context: Context,
+    viewModel: MenuScreenViewModel,
+    fusedLocationProviderClient: FusedLocationProviderClient
+) {
+    viewModel.startLocationUpdates(fusedLocationProviderClient, context) { location ->
+        viewModel.loadPlacesAround(context, location)
+    }
+}
 
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -124,7 +161,7 @@ fun MenuScreen(
     navController: NavController,
     themeMode: Boolean,
     context: Context,
-    fusedLocationProviderClient: FusedLocationProviderClient
+    fusedLocationProviderClient: FusedLocationProviderClient,
 ) {
     localizaaiTheme(darkTheme = themeMode) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -145,6 +182,11 @@ fun MenuScreen(
             }
         }
     }
+    RequestLocationPermissions(
+        context = context,
+        viewModel = viewModel,
+        fusedLocationProviderClient = fusedLocationProviderClient
+    )
 }
 
 
@@ -198,15 +240,16 @@ fun MenuContent(
 
     val markerState = rememberMarkerState()
     val rotation = remember { mutableStateOf(0.0f) }
+
     LaunchedEffect(permissionState) {
-        if (permissionState.allPermissionsGranted) {
+        if (!permissionState.allPermissionsGranted) {
+            permissionState.launchMultiplePermissionRequest()
+        } else {
             viewModel.startLocationUpdates(fusedLocationProviderClient, context) { location ->
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 markerState.position = currentLatLng
                 cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
             }
-        } else {
-            permissionState.launchMultiplePermissionRequest()
         }
     }
 
@@ -230,11 +273,18 @@ fun MenuContent(
         }
     }
 
-    sensorManager.registerListener(sensorEventListener, rotationSensor, SensorManager.SENSOR_DELAY_NORMAL)
+    DisposableEffect(Unit) {
+        sensorManager.registerListener(sensorEventListener, rotationSensor, SensorManager.SENSOR_DELAY_NORMAL)
+        onDispose {
+            sensorManager.unregisterListener(sensorEventListener)
+        }
+    }
 
-    val iconMaker = com.localizaai.R.drawable.pointer_small_white
-    val customIconBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, iconMaker)
-    val customIcon: BitmapDescriptor = BitmapDescriptorFactory.fromBitmap(customIconBitmap)
+    val customIcon by remember {
+        val iconMaker = com.localizaai.R.drawable.pointer_small_white
+        val customIconBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, iconMaker)
+        mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
+    }
 
     GoogleMap(
         modifier = modifier.fillMaxSize(),

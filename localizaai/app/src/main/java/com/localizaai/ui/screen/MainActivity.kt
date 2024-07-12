@@ -59,6 +59,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.LatLng
 import com.localizaai.R
+import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import kotlinx.coroutines.runBlocking
 import java.sql.Timestamp
 import java.util.Calendar
@@ -78,7 +79,7 @@ class MainActivity : ComponentActivity() {
             val viewModel: MainActivityViewModel = viewModel(factory = MainActivityViewModelFactory(context))
             val registerViewModel: RegisterScreenViewModel = viewModel(factory = RegisterScreenViewModelFactory(context))
             val loginViewModel: LoginScreenViewModel = viewModel(factory = LoginScreenViewModelFactory(context))
-            val menuViewModel: MenuScreenViewModel = viewModel()
+            val menuViewModel: MenuScreenViewModel = viewModel(factory = MenuScreenViewModelFactory(context))
             val settingsViewModel: SettingsScreenViewModel = viewModel(factory = SettingsScreenViewModelFactory(context))
             val aboutViewModel: AboutScreenViewModel = viewModel()
             val navController = rememberNavController()

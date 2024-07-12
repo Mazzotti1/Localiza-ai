@@ -65,7 +65,6 @@ class MainActivityViewModel(private val context: Context) : ViewModel() {
     private val weatherRepository = WeatherRepository(context)
     private val trafficRepository = TrafficRepository(context)
     private val eventsRepository = EventsRepository(context)
-    private val placesRepository = PlacesRepository(context)
 
 
     var weatherResponse by mutableStateOf<WeatherResponse?>(null)

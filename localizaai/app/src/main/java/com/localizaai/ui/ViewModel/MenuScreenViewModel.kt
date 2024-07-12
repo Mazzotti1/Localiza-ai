@@ -7,6 +7,7 @@ import android.health.connect.datatypes.ExerciseRoute
 import android.location.Location
 import android.os.Build
 import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.getValue
@@ -26,19 +27,25 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.localizaai.Model.PlaceRequest
+import com.localizaai.Model.TrafficResponse
+import com.localizaai.data.repository.PlacesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
 
-class MenuScreenViewModel : ViewModel() {
+class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     val themeMode = mutableStateOf(true)
     var username by mutableStateOf("")
     var roleName by mutableStateOf("")
 
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
-
+    private val placesRepository = PlacesRepository(context)
+    var placesResponse by mutableStateOf<List<PlaceRequest>?>(null)
 
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -107,5 +114,35 @@ class MenuScreenViewModel : ViewModel() {
         }
     }
 
+    fun loadPlacesAround(context: Context, location: Location){
+        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+
+        val lat = location.latitude
+        val lon = location.longitude
+        val radius = "350" // permitir deixar dinamico depois
+        val sort = "POPULARITY"
+        try {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = placesRepository.fetchPlacesData(lat.toString(), lon.toString(), radius, sort)
+
+                result.onSuccess { responseBody ->
+
+                    val placeJson = responseBody.toString()
+                    val gson = Gson()
+                    val placeListType = object : TypeToken<List<PlaceRequest>>() {}.type
+                    val placeResponse: List<PlaceRequest> = gson.fromJson(placeJson, placeListType)
+
+                    placesResponse = placeResponse
+
+                    Log.d("PlacesApi", "Resultado da consulta dos locais é: $placesResponse")
+                }.onFailure { exception ->
+                    Log.d("PlacesApi", "Error: ${exception.message}")
+                }
+            }
+        }catch(e: Throwable){
+            Log.d("PlacesApi", "Error: ${e}")
+        }
+
+    }
 
 }

@@ -29,8 +29,11 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.localizaai.Model.PlaceInfo
 import com.localizaai.Model.PlaceRequest
+import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.Model.TrafficResponse
+import com.localizaai.Model.WeatherResponse
 import com.localizaai.data.repository.PlacesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,7 +49,8 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private val placesRepository = PlacesRepository(context)
     var placesResponse by mutableStateOf<List<PlaceRequest>?>(null)
-
+    var specificPlaceResponse by mutableStateOf<SpecificPlaceResponse?>(null)
+    var infosPlaceResponse by mutableStateOf<PlaceInfo?>(null)
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -133,7 +137,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val placeResponse: List<PlaceRequest> = gson.fromJson(placeJson, placeListType)
 
                     placesResponse = placeResponse
-
+                    preparePlacesData(context, placesResponse)
                     Log.d("PlacesApi", "Resultado da consulta dos locais é: $placesResponse")
                 }.onFailure { exception ->
                     Log.d("PlacesApi", "Error: ${exception.message}")
@@ -145,4 +149,57 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     }
 
+    fun preparePlacesData(context : Context, response : List<PlaceRequest>?){
+        if (!response.isNullOrEmpty()) {
+            for (place in response){
+                getSpecificPlaceData(place)
+            }
+        }
+    }
+
+    fun getSpecificPlaceData(place : PlaceRequest){
+
+        try {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = placesRepository.fetchSpecificPlacesData(place.fsqId)
+
+                result.onSuccess { responseBody ->
+
+                    val specificPlaceJson = responseBody.toString()
+                    val gson = Gson()
+                    val parsedResponse = gson.fromJson(specificPlaceJson, SpecificPlaceResponse::class.java)
+                    specificPlaceResponse = parsedResponse
+
+                    Log.d("PlacesApi", "Resultado da consulta dos locais especificos: $specificPlaceResponse")
+                }.onFailure { exception ->
+                    Log.d("PlacesApi", "Error: ${exception.message}")
+                }
+            }
+        }catch (e: Throwable){
+            Log.d("PlacesApi", "Error: ${e}")
+        }
+    }
+
+    // chamar ao clicar e escolher um lugar especifico
+    fun getAllPlaceInfo(name : String, lat: String, long : String){
+        try {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = placesRepository.fetchPlaceByNameData(lat,long,name)
+
+                result.onSuccess { responseBody ->
+
+                    val infosPlaceJson = responseBody.toString()
+                    val gson = Gson()
+                    val parsedResponse = gson.fromJson(infosPlaceJson, PlaceInfo::class.java)
+                    infosPlaceResponse = parsedResponse
+
+                    Log.d("PlacesApi", "Resultado da consulta das informações do lugar: $infosPlaceResponse")
+                }.onFailure { exception ->
+                    Log.d("PlacesApi", "Error: ${exception.message}")
+                }
+            }
+        }catch(e: Throwable){
+            Log.d("PlacesApi", "Error: ${e}")
+        }
+    }
 }

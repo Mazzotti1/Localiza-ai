@@ -148,7 +148,7 @@ private fun prepareDataForApi(
     viewModel: MenuScreenViewModel,
     fusedLocationProviderClient: FusedLocationProviderClient
 ) {
-    viewModel.startLocationUpdates(fusedLocationProviderClient, context) { location ->
+    viewModel.startPlacesLocationUpdates(fusedLocationProviderClient, context) { location ->
         viewModel.loadPlacesAround(context, location)
     }
 }

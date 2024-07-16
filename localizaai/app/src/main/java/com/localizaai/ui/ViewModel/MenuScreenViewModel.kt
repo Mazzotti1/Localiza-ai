@@ -27,6 +27,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.google.common.util.concurrent.RateLimiter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.localizaai.Model.PlaceInfo
@@ -36,9 +37,13 @@ import com.localizaai.Model.TrafficResponse
 import com.localizaai.Model.WeatherResponse
 import com.localizaai.data.repository.PlacesRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import okhttp3.ResponseBody
+import java.util.concurrent.TimeUnit
 
 class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
@@ -51,6 +56,10 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var placesResponse by mutableStateOf<List<PlaceRequest>?>(null)
     var specificPlaceResponse by mutableStateOf<SpecificPlaceResponse?>(null)
     var infosPlaceResponse by mutableStateOf<PlaceInfo?>(null)
+    val placeSemaphore = Semaphore(2)
+    val placeCache = mutableMapOf<String, SpecificPlaceResponse>()
+    val rateLimiter = RateLimiter.create(2.5)
+
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -118,6 +127,37 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
+    fun startPlacesLocationUpdates(
+        fusedLocationProviderClient: FusedLocationProviderClient,
+        context: Context,
+        onLocationUpdate: (Location) -> Unit
+    ) {
+        val locationRequest = LocationRequest.create().apply {
+            interval = 60 * 1000 * 3// 3min
+            fastestInterval = 60 * 1000 * 3 // 3min
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+
+        val locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                locationResult.lastLocation?.let { location ->
+                    onLocationUpdate(location)
+                }
+            }
+        }
+
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        }
+    }
+
     fun loadPlacesAround(context: Context, location: Location){
         val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
 
@@ -125,6 +165,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val lon = location.longitude
         val radius = "350" // permitir deixar dinamico depois
         val sort = "POPULARITY"
+
         try {
             viewModelScope.launch(Dispatchers.IO) {
                 val result = placesRepository.fetchPlacesData(lat.toString(), lon.toString(), radius, sort)
@@ -137,31 +178,54 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val placeResponse: List<PlaceRequest> = gson.fromJson(placeJson, placeListType)
 
                     placesResponse = placeResponse
-                    preparePlacesData(context, placesResponse)
+                    preparePlacesData(placesResponse)
                     Log.d("PlacesApi", "Resultado da consulta dos locais é: $placesResponse")
                 }.onFailure { exception ->
-                    Log.d("PlacesApi", "Error: ${exception.message}")
+                    Log.d("PlacesApi", "Error 2: ${exception.message}")
                 }
             }
         }catch(e: Throwable){
-            Log.d("PlacesApi", "Error: ${e}")
+            Log.d("PlacesApi", "Error 2: ${e}")
         }
 
     }
 
-    fun preparePlacesData(context : Context, response : List<PlaceRequest>?){
+    fun preparePlacesData(response: List<PlaceRequest>?) {
         if (!response.isNullOrEmpty()) {
-            for (place in response){
-                getSpecificPlaceData(place)
+            viewModelScope.launch {
+                response.forEach { place ->
+                    placeSemaphore.withPermit {
+                        launch(Dispatchers.IO) {
+                            getSpecificPlaceData(place)
+                        }
+                    }
+                }
             }
         }
     }
 
-    fun getSpecificPlaceData(place : PlaceRequest){
+    suspend fun fetchSpecificPlaceDataWithRetry(fsqId: String, retries: Int = 3): Result<String> {
+        repeat(retries) {
+            if (rateLimiter.tryAcquire(1, TimeUnit.SECONDS)) {
+                val result = placesRepository.fetchSpecificPlacesData(fsqId)
+                if (result.isSuccess) {
+                    return result
+                }
+            }
+        }
+        return Result.failure(Exception("Failed after $retries retries"))
+    }
 
+    fun getSpecificPlaceData(place : PlaceRequest){
+        val cachedPlace = placeCache[place.fsqId]
+        if (cachedPlace != null) {
+            specificPlaceResponse = cachedPlace
+            Log.d("PlacesApi", "Usando o valor em cache para: ${place.fsqId}")
+            return
+        }
         try {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = placesRepository.fetchSpecificPlacesData(place.fsqId)
+                val result = fetchSpecificPlaceDataWithRetry(place.fsqId)
 
                 result.onSuccess { responseBody ->
 
@@ -169,14 +233,14 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val gson = Gson()
                     val parsedResponse = gson.fromJson(specificPlaceJson, SpecificPlaceResponse::class.java)
                     specificPlaceResponse = parsedResponse
-
+                    placeCache[place.fsqId] = parsedResponse
                     Log.d("PlacesApi", "Resultado da consulta dos locais especificos: $specificPlaceResponse")
                 }.onFailure { exception ->
-                    Log.d("PlacesApi", "Error: ${exception.message}")
+                    Log.d("PlacesApi", "Error 1: ${exception.message}")
                 }
             }
         }catch (e: Throwable){
-            Log.d("PlacesApi", "Error: ${e}")
+            Log.d("PlacesApi", "Error 1: ${e}")
         }
     }
 

@@ -75,6 +75,7 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberMarkerState
 import com.localizaai.Model.WeatherRequest
 import com.localizaai.ui.ViewModel.MainActivityViewModel
@@ -280,11 +281,19 @@ fun MenuContent(
         }
     }
 
-    val customIcon by remember {
-        val iconMaker = com.localizaai.R.drawable.pointer_small_white
+    val customIconPlayer by remember {
+        val iconMaker = com.localizaai.R.drawable.pointer_small
         val customIconBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, iconMaker)
         mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
     }
+
+    val customIconPlace by remember {
+        val iconMaker = com.localizaai.R.drawable.pin_marker
+        val customIconBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, iconMaker)
+        mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
+    }
+
+    val specificPlaceResponse = viewModel.specificPlaceList
 
     GoogleMap(
         modifier = modifier.fillMaxSize(),
@@ -292,11 +301,22 @@ fun MenuContent(
     ) {
         Marker(
             state = markerState,
-            icon = customIcon,
+            icon = customIconPlayer,
             anchor = Offset(0.5f, 0.5f),
             flat = true,
             rotation = rotation.value
         )
+
+
+        specificPlaceResponse.forEach { place ->
+            val placeLatLng = LatLng(place.geocodes.main.latitude, place.geocodes.main.longitude)
+            Marker(
+                state = MarkerState(position = placeLatLng),
+                icon = customIconPlace,
+                anchor = Offset(0.5f, 0.5f)
+            )
+        }
+
     }
 }
 

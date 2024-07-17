@@ -11,6 +11,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
@@ -55,10 +56,11 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private val placesRepository = PlacesRepository(context)
     var placesResponse by mutableStateOf<List<PlaceRequest>?>(null)
     var specificPlaceResponse by mutableStateOf<SpecificPlaceResponse?>(null)
+    var specificPlaceList = mutableStateListOf<SpecificPlaceResponse>()
     var infosPlaceResponse by mutableStateOf<PlaceInfo?>(null)
-    val placeSemaphore = Semaphore(2)
+    val placeSemaphore = Semaphore(7)
     val placeCache = mutableMapOf<String, SpecificPlaceResponse>()
-    val rateLimiter = RateLimiter.create(2.5)
+    val rateLimiter = RateLimiter.create(7.0)
 
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -132,29 +134,35 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         context: Context,
         onLocationUpdate: (Location) -> Unit
     ) {
-        val locationRequest = LocationRequest.create().apply {
-            interval = 60 * 1000 * 3// 3min
-            fastestInterval = 60 * 1000 * 3 // 3min
-            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-        }
+        viewModelScope.launch(Dispatchers.IO) {
+            val locationRequest = LocationRequest.create().apply {
+                interval = 60 * 1000 * 3// 3min
+                fastestInterval = 60 * 1000 * 3 // 3min
+                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            }
 
-        val locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                locationResult.lastLocation?.let { location ->
-                    onLocationUpdate(location)
+            val locationCallback = object : LocationCallback() {
+                override fun onLocationResult(locationResult: LocationResult) {
+                    locationResult.lastLocation?.let { location ->
+                        onLocationUpdate(location)
+                    }
                 }
             }
-        }
 
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                fusedLocationProviderClient.requestLocationUpdates(
+                    locationRequest,
+                    locationCallback,
+                    Looper.getMainLooper()
+                )
+            }
         }
     }
 
@@ -163,31 +171,44 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
         val lat = location.latitude
         val lon = location.longitude
-        val radius = "350" // permitir deixar dinamico depois
+        val radiusList = listOf("300", "600", "800")// permitir deixar dinamico depois
         val sort = "POPULARITY"
 
-        try {
-            viewModelScope.launch(Dispatchers.IO) {
-                val result = placesRepository.fetchPlacesData(lat.toString(), lon.toString(), radius, sort)
 
-                result.onSuccess { responseBody ->
+        viewModelScope.launch(Dispatchers.IO) {
+            radiusList.forEach { radius ->
+                placeSemaphore.withPermit {
 
-                    val placeJson = responseBody.toString()
-                    val gson = Gson()
-                    val placeListType = object : TypeToken<List<PlaceRequest>>() {}.type
-                    val placeResponse: List<PlaceRequest> = gson.fromJson(placeJson, placeListType)
+                    try {
+                        val result = placesRepository.fetchPlacesData(
+                            lat.toString(),
+                            lon.toString(),
+                            radius,
+                            sort
+                        )
+                        result.onSuccess { responseBody ->
+                            val placeJson = responseBody.toString()
+                            val gson = Gson()
+                            val placeListType = object : TypeToken<List<PlaceRequest>>() {}.type
+                            val placeResponse: List<PlaceRequest> =
+                                gson.fromJson(placeJson, placeListType)
 
-                    placesResponse = placeResponse
-                    preparePlacesData(placesResponse)
-                    Log.d("PlacesApi", "Resultado da consulta dos locais é: $placesResponse")
-                }.onFailure { exception ->
-                    Log.d("PlacesApi", "Error 2: ${exception.message}")
+                            placesResponse = placeResponse
+                            preparePlacesData(placesResponse)
+                            Log.d(
+                                "PlacesApi",
+                                "Resultado da consulta dos locais é: $placesResponse"
+                            )
+                        }.onFailure { exception ->
+                            Log.d("PlacesApi", "Error 2: ${exception.message}")
+                        }
+                    } catch (e: Throwable) {
+                        Log.d("PlacesApi", "Error 2: ${e}")
+                    }
                 }
+                delay(1000L)
             }
-        }catch(e: Throwable){
-            Log.d("PlacesApi", "Error 2: ${e}")
         }
-
     }
 
     fun preparePlacesData(response: List<PlaceRequest>?) {
@@ -199,12 +220,13 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                             getSpecificPlaceData(place)
                         }
                     }
+                    delay(1000L)
                 }
             }
         }
     }
 
-    suspend fun fetchSpecificPlaceDataWithRetry(fsqId: String, retries: Int = 3): Result<String> {
+    suspend fun fetchSpecificPlaceDataWithRetry(fsqId: String, retries: Int = 1): Result<String> {
         repeat(retries) {
             if (rateLimiter.tryAcquire(1, TimeUnit.SECONDS)) {
                 val result = placesRepository.fetchSpecificPlacesData(fsqId)
@@ -220,6 +242,8 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val cachedPlace = placeCache[place.fsqId]
         if (cachedPlace != null) {
             specificPlaceResponse = cachedPlace
+            specificPlaceList.add(specificPlaceResponse!!)
+
             Log.d("PlacesApi", "Usando o valor em cache para: ${place.fsqId}")
             return
         }
@@ -232,9 +256,9 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val specificPlaceJson = responseBody.toString()
                     val gson = Gson()
                     val parsedResponse = gson.fromJson(specificPlaceJson, SpecificPlaceResponse::class.java)
-                    specificPlaceResponse = parsedResponse
+                    specificPlaceList.add(parsedResponse)
                     placeCache[place.fsqId] = parsedResponse
-                    Log.d("PlacesApi", "Resultado da consulta dos locais especificos: $specificPlaceResponse")
+                    Log.d("PlacesApi", "Resultado da consulta dos locais especificos: $specificPlaceList")
                 }.onFailure { exception ->
                     Log.d("PlacesApi", "Error 1: ${exception.message}")
                 }

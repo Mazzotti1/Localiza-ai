@@ -45,6 +45,10 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import okhttp3.ResponseBody
 import java.util.concurrent.TimeUnit
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
@@ -61,7 +65,12 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     val placeSemaphore = Semaphore(7)
     val placeCache = mutableMapOf<String, SpecificPlaceResponse>()
     val rateLimiter = RateLimiter.create(7.0)
-
+    private var shouldFreeCache : Boolean = false
+    private var isFirstUpdate : Boolean = true
+    private var previousLat : Double = 0.0
+    private var previousLong : Double = 0.0
+    private var currentLat : Double = 0.0
+    private var currentLong : Double = 0.0
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -113,6 +122,23 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { location ->
                     onLocationUpdate(location)
+
+                    if(isFirstUpdate){
+                        previousLat = location.latitude
+                        previousLong = location.longitude
+                        isFirstUpdate = false
+                    }else{
+                        currentLat = location.latitude
+                        currentLong = location.longitude
+                    }
+
+                    if(currentLong != 0.0 && currentLat != 0.0 ){
+                        compareTravelledDistance()
+                    }
+
+                    if(shouldFreeCache){
+                        freeCacheData()
+                    }
                 }
             }
         }
@@ -288,6 +314,34 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             }
         }catch(e: Throwable){
             Log.d("PlacesApi", "Error: ${e}")
+        }
+    }
+
+    fun freeCacheData(){
+        if(specificPlaceList.isNotEmpty()){
+            specificPlaceList.clear()
+            placeCache.clear()
+            shouldFreeCache = false
+        }
+    }
+
+    fun compareTravelledDistance(){
+        val earthRadius = 6371e3
+        if(currentLong != 0.0  && currentLat != 0.0  && previousLat != 0.0  && previousLong != 0.0 ){
+            val dLat = Math.toRadians(currentLat - previousLat)
+            val dLon = Math.toRadians(currentLong - previousLong)
+
+        val a = sin(dLat / 2) * sin(dLat / 2) +
+                cos(Math.toRadians(previousLat)) * cos(Math.toRadians(currentLat)) *
+                sin(dLon / 2) * sin(dLon / 2)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+        val distance =  earthRadius * c
+            Log.d("PlacesApi", "Distancia percorrida ate agorar: ${distance}")
+            if(distance > 1500){
+                shouldFreeCache = true
+                isFirstUpdate = true
+            }
         }
     }
 }

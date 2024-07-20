@@ -241,6 +241,7 @@ fun MenuContent(
 
     val markerState = rememberMarkerState()
     val rotation = remember { mutableStateOf(0.0f) }
+    val shouldMoveCamera = remember { mutableStateOf(true) }
 
     LaunchedEffect(permissionState) {
         if (!permissionState.allPermissionsGranted) {
@@ -249,7 +250,10 @@ fun MenuContent(
             viewModel.startLocationUpdates(fusedLocationProviderClient, context) { location ->
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 markerState.position = currentLatLng
-                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
+                if (shouldMoveCamera.value) {
+                    cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
+                    shouldMoveCamera.value = false
+                }
             }
         }
     }
@@ -288,7 +292,7 @@ fun MenuContent(
     }
 
     val customIconPlace by remember {
-        val iconMaker = com.localizaai.R.drawable.pin_marker
+        val iconMaker = com.localizaai.R.drawable.pin_marker_small
         val customIconBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, iconMaker)
         mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
     }

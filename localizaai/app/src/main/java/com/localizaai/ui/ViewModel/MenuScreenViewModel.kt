@@ -71,6 +71,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private var previousLong : Double = 0.0
     private var currentLat : Double = 0.0
     private var currentLong : Double = 0.0
+    var isDialogPlaceOpen = mutableStateOf(false)
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -305,7 +306,9 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val infosPlaceJson = responseBody.toString()
                     val gson = Gson()
                     val parsedResponse = gson.fromJson(infosPlaceJson, PlaceInfo::class.java)
+
                     infosPlaceResponse = parsedResponse
+                    isDialogPlaceOpen.value = true
 
                     Log.d("PlacesApi", "Resultado da consulta das informações do lugar: $infosPlaceResponse")
                 }.onFailure { exception ->
@@ -337,11 +340,11 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
         val distance =  earthRadius * c
-            Log.d("PlacesApi", "Distancia percorrida ate agorar: ${distance}")
             if(distance > 1500){
                 shouldFreeCache = true
                 isFirstUpdate = true
             }
+            Log.d("PlacesApi", "Distancia percorrida ate agorar: ${distance}")
         }
     }
 }

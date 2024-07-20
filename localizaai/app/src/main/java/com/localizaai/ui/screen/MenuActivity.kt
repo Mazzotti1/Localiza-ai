@@ -1,5 +1,6 @@
 package com.localizaai.ui.screen
 
+import PlaceModal
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
@@ -77,13 +78,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberMarkerState
-import com.localizaai.Model.WeatherRequest
-import com.localizaai.ui.ViewModel.MainActivityViewModel
-import com.localizaai.ui.factory.MainActivityViewModelFactory
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
-import kotlinx.coroutines.suspendCancellableCoroutine
-import java.util.Calendar
-import kotlin.coroutines.resume
 
 
 class MenuActivity : ComponentActivity() {
@@ -220,6 +215,7 @@ fun TopBar(viewModel: MenuScreenViewModel, navController: NavController) {
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MenuContent(
@@ -242,6 +238,11 @@ fun MenuContent(
     val markerState = rememberMarkerState()
     val rotation = remember { mutableStateOf(0.0f) }
     val shouldMoveCamera = remember { mutableStateOf(true) }
+    var showPlaceInfoDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
+        showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
+    }
 
     LaunchedEffect(permissionState) {
         if (!permissionState.allPermissionsGranted) {
@@ -301,7 +302,10 @@ fun MenuContent(
 
     GoogleMap(
         modifier = modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState
+        cameraPositionState = cameraPositionState,
+        onMapClick = {
+            viewModel.isDialogPlaceOpen.value = false
+        }
     ) {
         Marker(
             state = markerState,
@@ -317,10 +321,18 @@ fun MenuContent(
             Marker(
                 state = MarkerState(position = placeLatLng),
                 icon = customIconPlace,
-                anchor = Offset(0.5f, 0.5f)
+                anchor = Offset(0.5f, 0.5f),
+                onClick = {
+                    viewModel.getAllPlaceInfo(place.name, place.geocodes.main.latitude.toString(), place.geocodes.main.longitude.toString())
+                    true
+                }
             )
         }
 
     }
+    if(showPlaceInfoDialog){
+        viewModel.infosPlaceResponse?.let { PlaceModal(onDismiss = { viewModel.isDialogPlaceOpen.value = false }, placeInfo = it) }
+    }
+
 }
 

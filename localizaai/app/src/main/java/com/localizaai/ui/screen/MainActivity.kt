@@ -60,8 +60,6 @@ import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.LatLng
 import com.localizaai.R
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
-import kotlinx.coroutines.runBlocking
-import java.sql.Timestamp
 import java.util.Calendar
 
 
@@ -184,6 +182,7 @@ class MainActivity : ComponentActivity() {
         language: String,
         context: Context
     ) {
+
         viewModel.verifyToken(context)
         Column(
             modifier = Modifier.fillMaxSize(),

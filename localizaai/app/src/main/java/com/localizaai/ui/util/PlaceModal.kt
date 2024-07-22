@@ -1,5 +1,6 @@
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,6 +8,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -31,7 +39,7 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
                 .widthIn(max = 300.dp)
                 .heightIn(max = 400.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background( color = MaterialTheme.colorScheme.background)
+                .background(color = MaterialTheme.colorScheme.background)
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -42,10 +50,31 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 placeInfo.place?.let { place ->
-                    Text(text = place.name ?: "Nome desconhecido", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+                    Text(
+                        text = place.name.ifEmpty { "Nome desconhecido" },
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Nota: ${place.rating ?: "Desconhecido"}", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-                    Text(text = "Popularidade: ${place.popularity ?: "Desconhecido"}", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                    Text(
+                        text = "Nota: ${if (place.rating != 0.0) place.rating else "Desconhecido"}",
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = "Popularidade: ",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ){
+                        ShowPopularityStars(formatPopularity(place.popularity))
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (place.hours_popular.isNotEmpty()) {
@@ -67,32 +96,94 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
                     }
 
                     if (place.tips.isNotEmpty()) {
-                        Text(text = "Comentários sobre o local", style = MaterialTheme.typography.titleMedium)
-                        place.tips.forEach { tip ->
-                            Text(text = tip.text)
-                        }
+                        Text(text = "Comentários sobre o local",
+                             style = MaterialTheme.typography.titleMedium,
+                             textAlign = TextAlign.Center)
                         Spacer(modifier = Modifier.height(16.dp))
+                        place.tips.forEach { tip ->
+                            Text(text = tip.text,
+                                 style = MaterialTheme.typography.labelMedium,
+                                 textAlign = TextAlign.Center)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalDivider(
+                                modifier = Modifier
+                                    .padding(horizontal = 32.dp)
+                                    .fillMaxWidth(),
+                                thickness = 1.dp,
+                                color = Color.Black
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     }
+                    Text(
+                        text = "Telefone: ${place.tel.ifEmpty { "Desconhecido" }}",
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Site: ${place.website.ifEmpty { "Desconhecido" }}",
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold
 
-                    Text(text = "Telefone: ${place.tel ?: "Desconhecido"}", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-                    Text(text = "Site: ${place.website ?: "Desconhecido"}", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                 } ?: run {
-                    Text(text = "Informações do local não estão disponíveis", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = "Informações do local não estão disponíveis",
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center,
+
+                    )
                 }
 
-                Button(onClick = onDismiss) {
-                    Text("Fechar")
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Black,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Fechar",
+                    )
                 }
+
             }
         }
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-fun formatTime(time: String): String {
-    val formatter = DateTimeFormatter.ofPattern("HHmm")
-    val parsedTime = LocalTime.parse(time, formatter)
-    return parsedTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+fun formatTime(time: String?): String {
+    return if (time != null) {
+        val formatter = DateTimeFormatter.ofPattern("HHmm")
+        val parsedTime = LocalTime.parse(time, formatter)
+        parsedTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+    } else {
+        "Desconhecido"
+    }
+}
+fun formatPopularity(popularity: Double?): Int {
+     if (popularity != null) {
+        val stars = popularity * 5
+         return stars.toInt()
+    } else {
+         return 0
+    }
+}
+@Composable
+fun ShowPopularityStars(stars: Int?) {
+    val totalStars = 5
+    val yellowStar: Painter = painterResource(id = com.localizaai.R.drawable.star_yellow)
+    val greyStar: Painter = painterResource(id =com.localizaai.R.drawable.star_grey)
+
+    for (i in 1..totalStars) {
+        val starIcon = if (i <= (stars ?: 0)) yellowStar else greyStar
+        Image(painter = starIcon, contentDescription = null, modifier = Modifier.size(24.dp))
+    }
 }
 

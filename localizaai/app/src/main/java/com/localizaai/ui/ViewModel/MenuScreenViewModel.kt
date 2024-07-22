@@ -328,6 +328,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
     fun compareTravelledDistance(){
         val earthRadius = 6371e3
         if(currentLong != 0.0  && currentLat != 0.0  && previousLat != 0.0  && previousLong != 0.0 ){

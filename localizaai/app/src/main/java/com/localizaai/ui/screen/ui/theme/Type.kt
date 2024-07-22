@@ -1,6 +1,7 @@
 package com.localizaai.ui.screen.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -61,5 +62,21 @@ val Typography = Typography(
         fontSize = 11.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp
+    ),
+    titleMedium = TextStyle(
+        fontFamily = RobotoCondensed,
+        fontWeight = FontWeight.Bold,
+        color = Color.Black,
+        fontSize = 22.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
+    ),
+    labelMedium = TextStyle (
+        fontWeight = FontWeight.Normal,
+        color = Color.Black,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
     )
+
 )

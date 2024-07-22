@@ -150,6 +150,7 @@ private fun prepareDataForApi(
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun MenuScreen(
@@ -293,7 +294,7 @@ fun MenuContent(
     }
 
     val customIconPlace by remember {
-        val iconMaker = com.localizaai.R.drawable.pin_marker_small
+        val iconMaker = com.localizaai.R.drawable.pin_marker_medium
         val customIconBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, iconMaker)
         mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
     }
@@ -317,16 +318,22 @@ fun MenuContent(
 
 
         specificPlaceResponse.forEach { place ->
-            val placeLatLng = LatLng(place.geocodes.main.latitude, place.geocodes.main.longitude)
-            Marker(
-                state = MarkerState(position = placeLatLng),
-                icon = customIconPlace,
-                anchor = Offset(0.5f, 0.5f),
-                onClick = {
-                    viewModel.getAllPlaceInfo(place.name, place.geocodes.main.latitude.toString(), place.geocodes.main.longitude.toString())
-                    true
-                }
-            )
+            val placeLatLng = place.geocodes?.main?.latitude?.let { place.geocodes.main.longitude.let { it1 ->
+                LatLng(it,
+                    it1
+                )
+            } }
+            placeLatLng?.let { MarkerState(position = it) }?.let {
+                Marker(
+                    state = it,
+                    icon = customIconPlace,
+                    anchor = Offset(0.5f, 0.5f),
+                    onClick = {
+                        viewModel.getAllPlaceInfo(place.name, place.geocodes.main.latitude.toString(), place.geocodes.main.longitude.toString())
+                        true
+                    }
+                )
+            }
         }
 
     }

@@ -9,186 +9,186 @@ data class PlaceRequest(
 
 data class SpecificPlaceResponse(
     val fsq_id: String,
-    val categories: List<Category>,
-    val chains: List<Chain>,
-    val closed_bucket: String,
-    val geocodes: Geocodes,
-    val link: String,
-    val location: SpecifLocation,
-    val name: String,
-    val related_places: RelatedPlaces?,
-    val timezone: String
+    val categories: List<Category> = emptyList(),
+    val chains: List<Chain> = emptyList(),
+    val closed_bucket: String = "",
+    val geocodes: Geocodes? = null,
+    val link: String = "",
+    val location: SpecifLocation? = null,
+    val name: String = "",
+    val related_places: RelatedPlaces? = null,
+    val timezone: String = ""
 )
 
 data class Category(
     val id: Int,
-    val name: String,
-    val short_name: String,
-    val plural_name: String,
-    val icon: Icon
+    val name: String = "",
+    val short_name: String = "",
+    val plural_name: String = "",
+    val icon: Icon? = null
 )
 
 data class Icon(
-    val prefix: String,
-    val suffix: String
+    val prefix: String = "",
+    val suffix: String = ""
 )
 
 data class Chain(
-    val id: String,
-    val name: String
+    val id: String = "",
+    val name: String = ""
 )
 
 data class Geocodes(
-    val drop_off: Coordinates,
-    val main: Coordinates
+    val drop_off: Coordinates? = null,
+    val main: Coordinates? = null
 )
 
 data class Coordinates(
-    val latitude: Double,
-    val longitude: Double
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0
 )
 
 data class SpecifLocation(
-    val address: String,
-    val country: String,
-    val cross_street: String,
-    val formatted_address: String,
-    val locality: String,
-    val postcode: String,
-    val region: String
+    val address: String = "",
+    val country: String = "",
+    val cross_street: String = "",
+    val formatted_address: String = "",
+    val locality: String = "",
+    val postcode: String = "",
+    val region: String = ""
 )
 
 data class RelatedPlaces(
-    val children: List<Children>,
+    val children: List<Children> = emptyList()
 )
 
 data class Children(
-    val fsqId: String,
-    val categories: List<Category>,
-    val name : String
+    val fsqId: String = "",
+    val categories: List<Category> = emptyList(),
+    val name: String = ""
 )
 
 data class PlaceInfo(
-    val place: Place,
-    val match_score: Double,
-    val context: Context
+    val place: Place? = null,
+    val match_score: Double = 0.0,
+    val context: Context? = null
 )
 
 data class Place(
-    val fsq_id: String,
-    val features: Features,
-    val hours_popular: List<HoursPopular>,
-    val name: String,
-    val popularity: Double,
-    val price: Int,
-    val rating: Double,
-    val social_media: SocialMedia,
-    val stats: Stats,
-    val tastes: List<String>,
-    val tel: String,
-    val timezone: String,
-    val tips: List<Tip>,
-    val verified: Boolean,
-    val website: String
+    val fsq_id: String = "",
+    val features: Features? = null,
+    val hours_popular: List<HoursPopular> = emptyList(),
+    val name: String = "",
+    val popularity: Double = 0.0,
+    val price: Int = 0,
+    val rating: Double = 0.0,
+    val social_media: SocialMedia? = null,
+    val stats: Stats? = null,
+    val tastes: List<String> = emptyList(),
+    val tel: String = "",
+    val timezone: String = "",
+    val tips: List<Tip> = emptyList(),
+    val verified: Boolean = false,
+    val website: String = ""
 )
 
 data class Features(
-    val payment: Payment,
-    val food_and_drink: FoodAndDrink,
-    val services: Services,
-    val amenities: Amenities,
-    val attributes: Attributes
+    val payment: Payment? = null,
+    val food_and_drink: FoodAndDrink? = null,
+    val services: Services? = null,
+    val amenities: Amenities? = null,
+    val attributes: Attributes? = null
 )
 
 data class Payment(
-    val credit_cards: CreditCards
+    val credit_cards: CreditCards? = null
 )
 
 data class CreditCards(
-    val accepts_credit_cards: Boolean,
-    val amex: Boolean,
-    val visa: Boolean,
-    val master_card: Boolean
+    val accepts_credit_cards: Boolean = false,
+    val amex: Boolean = false,
+    val visa: Boolean = false,
+    val master_card: Boolean = false
 )
 
 data class FoodAndDrink(
-    val alcohol: Alcohol,
-    val meals: Meals
+    val alcohol: Alcohol? = null,
+    val meals: Meals? = null
 )
 
 data class Alcohol(
-    val cocktails: Boolean,
-    val full_bar: Boolean
+    val cocktails: Boolean = false,
+    val full_bar: Boolean = false
 )
 
 data class Meals(
-    val brunch: Boolean,
-    val happy_hour: Boolean,
-    val dinner: Boolean
+    val brunch: Boolean = false,
+    val happy_hour: Boolean = false,
+    val dinner: Boolean = false
 )
 
 data class Services(
-    val delivery: Boolean,
-    val dine_in: DineIn
+    val delivery: Boolean = false,
+    val dine_in: DineIn? = null
 )
 
 data class DineIn(
-    val reservations: Boolean
+    val reservations: Boolean = false
 )
 
 data class Amenities(
-    val restroom: Boolean,
-    val smoking: Boolean,
-    val live_music: Boolean,
-    val private_room: Boolean,
-    val outdoor_seating: Boolean,
-    val tvs: Boolean,
-    val parking: Parking,
-    val wifi: String
+    val restroom: Boolean = false,
+    val smoking: Boolean = false,
+    val live_music: Boolean = false,
+    val private_room: Boolean = false,
+    val outdoor_seating: Boolean = false,
+    val tvs: Boolean = false,
+    val parking: Parking? = null,
+    val wifi: String = ""
 )
 
 data class Parking(
-    val parking: Boolean,
-    val private_lot: Boolean
+    val parking: Boolean = false,
+    val private_lot: Boolean = false
 )
 
 data class Attributes(
-    val clean: String,
-    val crowded: String,
-    val dates_popular: String,
-    val families_popular: String,
-    val groups_popular: String,
-    val noisy: String,
-    val quick_bite: String,
-    val romantic: String,
-    val service_quality: String,
-    val special_occasion: String,
-    val trendy: String,
-    val value_for_money: String
+    val clean: String = "",
+    val crowded: String = "",
+    val dates_popular: String = "",
+    val families_popular: String = "",
+    val groups_popular: String = "",
+    val noisy: String = "",
+    val quick_bite: String = "",
+    val romantic: String = "",
+    val service_quality: String = "",
+    val special_occasion: String = "",
+    val trendy: String = "",
+    val value_for_money: String = ""
 )
 
 data class HoursPopular(
-    val close: String,
-    val day: Int,
-    val open: String
+    val close: String = "",
+    val day: Int = 0,
+    val open: String = ""
 )
 
 data class SocialMedia(
-    val facebook_id: String
+    val facebook_id: String = ""
 )
 
 data class Stats(
-    val total_photos: Int,
-    val total_ratings: Int,
-    val total_tips: Int
+    val total_photos: Int = 0,
+    val total_ratings: Int = 0,
+    val total_tips: Int = 0
 )
 
 data class Tip(
-    val created_at: String,
-    val text: String
+    val created_at: String = "",
+    val text: String = ""
 )
 
 data class Context(
-    val latitude: Double,
-    val longitude: Double
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0
 )

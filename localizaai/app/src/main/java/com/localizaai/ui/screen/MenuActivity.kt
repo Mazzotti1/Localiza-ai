@@ -18,7 +18,13 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
@@ -60,8 +66,10 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.runBlocking
 import java.util.jar.Manifest
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.location.LocationCallback
@@ -79,6 +87,8 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberMarkerState
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
+import com.localizaai.ui.util.SearchBarMain
+import com.localizaai.ui.util.performSearch
 
 
 class MenuActivity : ComponentActivity() {
@@ -187,6 +197,7 @@ fun MenuScreen(
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(viewModel: MenuScreenViewModel, navController: NavController) {
@@ -301,45 +312,53 @@ fun MenuContent(
 
     val specificPlaceResponse = viewModel.specificPlaceList
 
-    GoogleMap(
-        modifier = modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState,
-        onMapClick = {
-            viewModel.isDialogPlaceOpen.value = false
-        }
-    ) {
-        Marker(
-            state = markerState,
-            icon = customIconPlayer,
-            anchor = Offset(0.5f, 0.5f),
-            flat = true,
-            rotation = rotation.value
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            onMapClick = {
+                viewModel.isDialogPlaceOpen.value = false
+            }
+        ) {
+            Marker(
+                state = markerState,
+                icon = customIconPlayer,
+                anchor = Offset(0.5f, 0.5f),
+                flat = true,
+                rotation = rotation.value
+            )
 
-
-        specificPlaceResponse.forEach { place ->
-            val placeLatLng = place.geocodes?.main?.latitude?.let { place.geocodes.main.longitude.let { it1 ->
-                LatLng(it,
-                    it1
-                )
-            } }
-            placeLatLng?.let { MarkerState(position = it) }?.let {
-                Marker(
-                    state = it,
-                    icon = customIconPlace,
-                    anchor = Offset(0.5f, 0.5f),
-                    onClick = {
-                        viewModel.getAllPlaceInfo(place.name, place.geocodes.main.latitude.toString(), place.geocodes.main.longitude.toString())
-                        true
-                    }
-                )
+            specificPlaceResponse.forEach { place ->
+                val placeLatLng = place.geocodes?.main?.latitude?.let { place.geocodes.main.longitude?.let { it1 ->
+                    LatLng(it, it1)
+                } }
+                placeLatLng?.let { MarkerState(position = it) }?.let {
+                    Marker(
+                        state = it,
+                        icon = customIconPlace,
+                        anchor = Offset(0.5f, 0.5f),
+                        onClick = {
+                            viewModel.getAllPlaceInfo(place.name, place.geocodes.main.latitude.toString(), place.geocodes.main.longitude.toString())
+                            true
+                        }
+                    )
+                }
             }
         }
-
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+        ) {
+            Spacer(modifier = Modifier.height(64.dp))
+            SearchBarMain { query ->
+                performSearch(query)
+            }
+        }
+        if (showPlaceInfoDialog) {
+            viewModel.infosPlaceResponse?.let { PlaceModal(onDismiss = { viewModel.isDialogPlaceOpen.value = false }, placeInfo = it) }
+        }
     }
-    if(showPlaceInfoDialog){
-        viewModel.infosPlaceResponse?.let { PlaceModal(onDismiss = { viewModel.isDialogPlaceOpen.value = false }, placeInfo = it) }
-    }
-
 }
+
+
 

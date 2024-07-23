@@ -49,4 +49,26 @@
     <string name="desactive_yes">Sim</string>
     <string name="desactive_cancel">Cancelar</string>
 
+    <!--    PlaceModal-->
+    <string name="unknown_name">Nome desconhecido</string>
+    <string name="unknown">Desconhecido</string>
+    <string name="rate">Nota</string>
+    <string name="popularity">Popularidade</string>
+    <string name="popular_hours">Horários populares</string>
+    <string name="none">Nenhum</string>
+    <string name="monday">Segunda-feira</string>
+    <string name="tuesday">Terça-feira</string>
+    <string name="wednesday">Quarta-feira</string>
+    <string name="thursday">Quinta-feira</string>
+    <string name="friday">Sexta-feira</string>
+    <string name="saturday">Sábado</string>
+    <string name="sunday">Domingo</string>
+    <string name="comments_title">Comentários sobre o local</string>
+    <string name="phone">Telefone</string>
+    <string name="website">Site</string>
+    <string name="location_info_unavailable">Informações do local não estão disponíveis</string>
+    <string name="close">Fechar</string>
+
+    <!--    SearchBar-->
+    <string name="search">Procurar</string>
 </resources>

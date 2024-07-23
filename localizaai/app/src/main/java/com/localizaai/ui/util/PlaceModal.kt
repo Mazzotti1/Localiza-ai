@@ -21,11 +21,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.localizaai.Model.PlaceInfo
+import com.localizaai.R
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -51,19 +53,19 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
             ) {
                 placeInfo.place?.let { place ->
                     Text(
-                        text = place.name.ifEmpty { "Nome desconhecido" },
+                        text = place.name.ifEmpty { stringResource(id = R.string.unknown_name) },
                         style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Nota: ${if (place.rating != 0.0) place.rating else "Desconhecido"}",
+                        text = "${stringResource(id = R.string.rate)}: ${if (place.rating != 0.0) place.rating else stringResource(id = R.string.unknown)}",
                         style = MaterialTheme.typography.labelMedium,
                         textAlign = TextAlign.Center
                     )
 
                     Text(
-                        text = "Popularidade: ",
+                        text = "${stringResource(id = R.string.popularity)}: ",
                         style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center
                     )
@@ -78,17 +80,17 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (place.hours_popular.isNotEmpty()) {
-                        Text(text = "Horários populares:", style = MaterialTheme.typography.titleMedium)
+                        Text(text = "${stringResource(id = R.string.popular_hours)}:", style = MaterialTheme.typography.titleMedium)
                         place.hours_popular.forEach { hours ->
                             val dayOfWeek = when (hours.day) {
-                                1 -> "Segunda-feira"
-                                2 -> "Terça-feira"
-                                3 -> "Quarta-feira"
-                                4 -> "Quinta-feira"
-                                5 -> "Sexta-feira"
-                                6 -> "Sábado"
-                                7 -> "Domingo"
-                                else -> "Nenhum"
+                                1 -> stringResource(id = R.string.monday)
+                                2 -> stringResource(id = R.string.tuesday)
+                                3 -> stringResource(id = R.string.wednesday)
+                                4 -> stringResource(id = R.string.thursday)
+                                5 -> stringResource(id = R.string.friday)
+                                6 -> stringResource(id = R.string.saturday)
+                                7 -> stringResource(id = R.string.sunday)
+                                else -> stringResource(id = R.string.none)
                             }
                             Text(text = "$dayOfWeek: ${formatTime(hours.open)} - ${formatTime(hours.close)}")
                         }
@@ -96,7 +98,7 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
                     }
 
                     if (place.tips.isNotEmpty()) {
-                        Text(text = "Comentários sobre o local",
+                        Text(text = stringResource(id = R.string.comments_title),
                              style = MaterialTheme.typography.titleMedium,
                              textAlign = TextAlign.Center)
                         Spacer(modifier = Modifier.height(16.dp))
@@ -116,14 +118,14 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
                         }
                     }
                     Text(
-                        text = "Telefone: ${place.tel.ifEmpty { "Desconhecido" }}",
+                        text = "${stringResource(id = R.string.phone)}: ${place.tel.ifEmpty { stringResource(id = R.string.unknown) }}",
                         style = MaterialTheme.typography.labelMedium,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Site: ${place.website.ifEmpty { "Desconhecido" }}",
+                        text = "${stringResource(id = R.string.website)}: ${place.website.ifEmpty { stringResource(id = R.string.unknown) }}",
                         style = MaterialTheme.typography.labelMedium,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold
@@ -132,7 +134,7 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
                     Spacer(modifier = Modifier.height(8.dp))
                 } ?: run {
                     Text(
-                        text = "Informações do local não estão disponíveis",
+                        text = stringResource(id = R.string.location_info_unavailable),
                         style = MaterialTheme.typography.labelMedium,
                         textAlign = TextAlign.Center,
 
@@ -148,7 +150,7 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = "Fechar",
+                        text = stringResource(id = R.string.close),
                     )
                 }
 

@@ -49,4 +49,26 @@
     <string name="desactive_yes">Yes</string>
     <string name="desactive_cancel">Cancel</string>
 
+    <!--    PlaceModal-->
+    <string name="unknown_name">Unknown Name</string>
+    <string name="unknown">Unknown</string>
+    <string name="rate">Rate</string>
+    <string name="popularity">Popularity</string>
+    <string name="popular_hours">Popular Hours</string>
+    <string name="none">None</string>
+    <string name="monday">Monday</string>
+    <string name="tuesday">Tuesday</string>
+    <string name="wednesday">Wednesday</string>
+    <string name="thursday">Thursday</string>
+    <string name="friday">Friday</string>
+    <string name="saturday">Saturday</string>
+    <string name="sunday">Sunday</string>
+    <string name="comments_title">Tips about place</string>
+    <string name="phone">Phone</string>
+    <string name="website">Website</string>
+    <string name="location_info_unavailable">Location information is not available</string>
+    <string name="close">Close</string>
+
+    <!--    SearchBar-->
+    <string name="search">Search</string>
 </resources>

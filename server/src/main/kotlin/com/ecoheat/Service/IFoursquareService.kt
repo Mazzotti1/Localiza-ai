@@ -12,4 +12,7 @@ interface IFoursquareService {
 
     fun getPlacesByName(lat: String,long: String,name: String)
     fun getPlacesTips(id: String)
+
+    fun getAutocompletePlaces(search: String, lat: String, long: String)
+    fun onAutocompletePlacesResponse(responseBody: String)
 }

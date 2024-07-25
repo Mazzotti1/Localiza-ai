@@ -83,4 +83,20 @@ class FoursquareController (private val messageSource: MessageSource) {
         }
 
     }
-}
+
+    @GetMapping("/autocomplete")
+    fun getAutocompletePlaces(
+        @RequestParam search: String,
+        @RequestParam lat: String,
+        @RequestParam long: String,
+    ): ResponseEntity<Any>{
+        try {
+            foursquareService!!.getAutocompletePlaces(search,lat,long)
+            val responseFromApi = foursquareService.getAutocompletePlacesResponse()
+            return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
+        }catch  (ex: RegistroIncorretoException) {
+            val errorMessage = messageSource.getMessage("place.error.request", null, locale)
+            return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+        }
+    }
+}   

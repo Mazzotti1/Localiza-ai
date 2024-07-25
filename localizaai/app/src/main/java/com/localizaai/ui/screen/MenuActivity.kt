@@ -351,7 +351,7 @@ fun MenuContent(
         ) {
             Spacer(modifier = Modifier.height(64.dp))
             SearchBarMain { query ->
-                performSearch(query)
+                performSearch(query, viewModel)
             }
         }
         if (showPlaceInfoDialog) {

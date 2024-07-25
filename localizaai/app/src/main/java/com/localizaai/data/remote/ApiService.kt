@@ -27,7 +27,7 @@ interface ApiService {
     @DELETE("/users/desactivate/{userId}")
     suspend fun desactivateUser(@Path("userId") userId: String): ResponseBody
 
-    @GET("/weather") //implementar
+    @GET("/weather")
     suspend fun getWeatherData(
         @Query("q") q: String,
         @Query("days") days: Int,
@@ -35,17 +35,17 @@ interface ApiService {
         @Query("lang") lang: String
     ): Response<ResponseBody>
 
-    @GET("/traffic") //implementar
+    @GET("/traffic")
     suspend fun getTrafficData(
         @Query("latitude") latitude: Double,
         @Query("longitude") longitude: Double
     ): Response<ResponseBody>
 
 
-    @GET("/events") //implementar
+    @GET("/events")
     suspend fun getEventsData(@Query("localRequest") localRequest: String): Response<ResponseBody>
 
-    @GET("/places") //implementar
+    @GET("/places")
     suspend fun getPlacesData(
         @Query("lat") lat: String,
         @Query("long") long: String,
@@ -54,16 +54,23 @@ interface ApiService {
     ): Response<ResponseBody>
 
 
-    @GET("/places/specific") //implementar
+    @GET("/places/specific")
     suspend fun getSpecificPlaceData(@Query("id") id: String): Response<ResponseBody>
 
-    @GET("/places/byName") //implementar
+    @GET("/places/byName")
     suspend fun getPlacesByNameData(
         @Query("lat") lat: String,
         @Query("long") long: String,
         @Query("name") name : String
     ): Response<ResponseBody>
 
-    @GET("/places/tips") //implementar
+    @GET("/places/tips")
     suspend fun getPlaceTipsData(@Query("id") id: String): Response<ResponseBody>
+
+    @GET("/places/autocomplete")
+    suspend fun getAutocompletePlaces(
+        @Query("name") search : String,
+        @Query("lat") lat: String,
+        @Query("long") long: String
+    ): Response<ResponseBody>
 }

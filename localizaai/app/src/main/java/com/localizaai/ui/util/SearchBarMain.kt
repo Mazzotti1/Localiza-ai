@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.localizaai.R
+import com.localizaai.ui.ViewModel.MenuScreenViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,6 +91,6 @@ fun SearchBarMain(onSearch: (String) -> Unit) {
     }
 }
 
-fun performSearch(query: String) {
-
+fun performSearch(query: String, viewModel:MenuScreenViewModel) {
+    viewModel.onSearch(query)
 }

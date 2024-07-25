@@ -86,4 +86,23 @@ class PlacesRepository(private val context: Context) {
             Result.failure(e)
         }
     }
+
+    suspend fun fetchPlaceAutocomplete(search: String, lat:String, long: String): Result<String> {
+        return try {
+            val response = withContext(Dispatchers.IO) {
+                apiService.getAutocompletePlaces(search,lat,long)
+            }
+
+            if (response.isSuccessful) {
+                val responseBody = response.body()?.string()
+                Result.success(responseBody ?: "")
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Result.failure(Exception(errorBody ?: "Erro inesperado no Places by name"))
+            }
+        } catch (e: Exception) {
+            Log.d("Places", "Erro ao fazer a requisição: $e")
+            Result.failure(e)
+        }
+    }
 }

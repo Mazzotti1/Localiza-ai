@@ -192,3 +192,31 @@ data class Context(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0
 )
+
+data class Autocomplete(
+    val autocompleteResult: List<AutocompleteResult> = emptyList()
+)
+
+data class AutocompleteResult(
+    val type : String?,
+    val text : AutocompleteText,
+    val place : AutocompletePlace,
+)
+
+data class AutocompleteText(
+    val primary: String?,
+    val secondary: String?,
+)
+
+data class AutocompletePlace(
+    val fsqId: String?,
+    val categories: List<Category>,
+    val distance: String?,
+    val geocodes: AutocompleteGeocodes?
+)
+
+data class AutocompleteGeocodes (
+    val main: Coordinates? = null,
+    val roof: Coordinates? = null
+
+)

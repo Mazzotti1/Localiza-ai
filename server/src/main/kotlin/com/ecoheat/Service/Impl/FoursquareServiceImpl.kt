@@ -61,6 +61,23 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
             onPlacesFailure(errorMessage)
         }
     }
+
+    override fun getAutocompletePlaces(search: String, lat: String, long : String){
+        try {
+            val foursquareApi = FoursquareApi(null)
+            future = CompletableFuture()
+            foursquareApi.getAutocompletePlaces(search,lat, long, this)
+        }catch (ex: RegistroIncorretoException){
+            val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
+            onPlacesFailure(errorMessage)
+        }
+    }
+
+    override fun onAutocompletePlacesResponse(responseBody: String) {
+        responseFromApi = responseBody
+        future.complete(responseBody)
+    }
+
     override fun onPlacesResponse(response: List<FoursquarePlace>){
         responseFromApi = response
         future.complete(response)
@@ -80,6 +97,10 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
     }
 
     fun getSpecificApiResponse(): String{
+        return future.join() as String
+    }
+
+    fun getAutocompletePlacesResponse(): String{
         return future.join() as String
     }
 }

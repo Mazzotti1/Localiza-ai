@@ -139,6 +139,37 @@ class FoursquareApi (private val messageSource: MessageSource?) {
             }
         })
     }
+
+    fun getAutocompletePlaces(search :String,lat: String,long: String, callback: IFoursquareService){
+        val url = "https://api.foursquare.com/v3/autocomplete?query=${search}&ll=${lat}%2C${long}&radius=5000&limit=50"
+
+        val request = Request.Builder()
+            .url(url)
+            .get()
+            .addHeader("accept", "application/json")
+            .addHeader("Authorization", apiKey)
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                val errorCause = e.cause
+                val errorMessage = e.message
+
+                val formattedErrorMessage = "Ocorreu um erro ao chamar API: $errorMessage\nPorquê: $errorCause"
+                callback.onPlacesFailure(messageSource!!.getMessage(formattedErrorMessage, null, locale))
+
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseBody = response.body?.string()
+                if (response.isSuccessful && responseBody != null) {
+                    callback.onAutocompletePlacesResponse(responseBody)
+                } else {
+                    callback.onPlacesFailure(messageSource!!.getMessage("place.error.request", null, locale))
+                }
+            }
+        })
+    }
 }
 
 data class FoursquareResponse(val results: List<FoursquarePlace>)

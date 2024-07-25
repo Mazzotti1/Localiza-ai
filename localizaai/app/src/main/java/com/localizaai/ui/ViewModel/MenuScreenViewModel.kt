@@ -31,6 +31,7 @@ import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.common.util.concurrent.RateLimiter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.localizaai.Model.Autocomplete
 import com.localizaai.Model.PlaceInfo
 import com.localizaai.Model.PlaceRequest
 import com.localizaai.Model.SpecificPlaceResponse
@@ -62,15 +63,19 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var specificPlaceResponse by mutableStateOf<SpecificPlaceResponse?>(null)
     var specificPlaceList = mutableStateListOf<SpecificPlaceResponse>()
     var infosPlaceResponse by mutableStateOf<PlaceInfo?>(null)
+    var autocompletePlaces = mutableStateOf<Autocomplete?>(null)
+
     val placeSemaphore = Semaphore(7)
     val placeCache = mutableMapOf<String, SpecificPlaceResponse>()
     val rateLimiter = RateLimiter.create(7.0)
+
     private var shouldFreeCache : Boolean = false
     private var isFirstUpdate : Boolean = true
     private var previousLat : Double = 0.0
     private var previousLong : Double = 0.0
     private var currentLat : Double = 0.0
     private var currentLong : Double = 0.0
+
     var isDialogPlaceOpen = mutableStateOf(false)
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -346,6 +351,30 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                 isFirstUpdate = true
             }
             Log.d("PlacesApi", "Distancia percorrida ate agorar: ${distance}")
+        }
+    }
+
+    fun onSearch(search : String){
+        val lat = currentLat.toString()
+        val long = currentLong.toString()
+        try {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = placesRepository.fetchPlaceAutocomplete(search,lat,long)
+
+                result.onSuccess { responseBody ->
+
+                    val autocompleteJson = responseBody.toString()
+                    val gson = Gson()
+                    val parsedResponse = gson.fromJson(autocompleteJson, Autocomplete::class.java)
+
+                    autocompletePlaces.value = parsedResponse
+                    Log.d("PlacesApiAutocomplete", "Resultado da consulta dos locais de pesquisa: $autocompletePlaces")
+                }.onFailure { exception ->
+                    Log.d("PlacesApi", "Error: ${exception.message}")
+                }
+            }
+        }catch(e: Throwable){
+            Log.d("PlacesApi", "Error: ${e}")
         }
     }
 }

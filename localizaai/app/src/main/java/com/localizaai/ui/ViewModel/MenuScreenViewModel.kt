@@ -368,7 +368,8 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val parsedResponse = gson.fromJson(autocompleteJson, Autocomplete::class.java)
 
                     autocompletePlaces.value = parsedResponse
-                    Log.d("PlacesApiAutocomplete", "Resultado da consulta dos locais de pesquisa: $autocompletePlaces")
+                    Log.d("PlacesApiAutocomplete", "Search value : $search, lat: $lat, long: $long")
+                    Log.d("PlacesApiAutocomplete", "Resultado da consulta dos locais de pesquisa: ${autocompletePlaces.value}")
                 }.onFailure { exception ->
                     Log.d("PlacesApi", "Error: ${exception.message}")
                 }

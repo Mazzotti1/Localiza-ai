@@ -194,7 +194,7 @@ data class Context(
 )
 
 data class Autocomplete(
-    val autocompleteResult: List<AutocompleteResult> = emptyList()
+    val results: List<AutocompleteResult> = emptyList()
 )
 
 data class AutocompleteResult(
@@ -211,12 +211,15 @@ data class AutocompleteText(
 data class AutocompletePlace(
     val fsqId: String?,
     val categories: List<Category>,
-    val distance: String?,
-    val geocodes: AutocompleteGeocodes?
+    val distance: Int?,
+    val geocodes: AutocompleteGeocodes?,
+    val name: String?
 )
 
 data class AutocompleteGeocodes (
     val main: Coordinates? = null,
-    val roof: Coordinates? = null
-
+    val roof: Coordinates? = null,
+    val drop_off: Coordinates?
 )
+
+

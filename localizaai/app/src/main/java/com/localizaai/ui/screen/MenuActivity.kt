@@ -88,6 +88,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberMarkerState
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import com.localizaai.ui.util.SearchBarMain
+import com.localizaai.ui.util.SearchResultList
 import com.localizaai.ui.util.performSearch
 
 
@@ -251,6 +252,7 @@ fun MenuContent(
     val rotation = remember { mutableStateOf(0.0f) }
     val shouldMoveCamera = remember { mutableStateOf(true) }
     var showPlaceInfoDialog by remember { mutableStateOf(false) }
+    val autocompletePlaces by viewModel.autocompletePlaces
 
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
@@ -352,6 +354,10 @@ fun MenuContent(
             Spacer(modifier = Modifier.height(64.dp))
             SearchBarMain { query ->
                 performSearch(query, viewModel)
+            }
+            if (autocompletePlaces != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                SearchResultList(autocompletePlaces)
             }
         }
         if (showPlaceInfoDialog) {

@@ -69,7 +69,7 @@ interface ApiService {
 
     @GET("/places/autocomplete")
     suspend fun getAutocompletePlaces(
-        @Query("name") search : String,
+        @Query("search") search : String,
         @Query("lat") lat: String,
         @Query("long") long: String
     ): Response<ResponseBody>

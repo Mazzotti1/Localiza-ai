@@ -19,6 +19,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -253,6 +255,8 @@ fun MenuContent(
     val shouldMoveCamera = remember { mutableStateOf(true) }
     var showPlaceInfoDialog by remember { mutableStateOf(false) }
     val autocompletePlaces by viewModel.autocompletePlaces
+    var showSearchListItens by viewModel.showSearchListItens
+    var isFocused by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
@@ -320,6 +324,7 @@ fun MenuContent(
             cameraPositionState = cameraPositionState,
             onMapClick = {
                 viewModel.isDialogPlaceOpen.value = false
+                focusManager.clearFocus()
             }
         ) {
             Marker(
@@ -352,10 +357,17 @@ fun MenuContent(
                 .align(Alignment.TopCenter)
         ) {
             Spacer(modifier = Modifier.height(64.dp))
-            SearchBarMain { query ->
-                performSearch(query, viewModel)
-            }
-            if (autocompletePlaces != null) {
+            SearchBarMain(
+                viewModel,
+                onSearch = { query ->
+                    performSearch(query, viewModel)
+                },
+                isFocused = isFocused,
+                onFocusChanged = {
+                    isFocused = it
+                }
+            )
+            if (autocompletePlaces != null && showSearchListItens) {
                 Spacer(modifier = Modifier.height(2.dp))
                 SearchResultList(autocompletePlaces)
             }
@@ -364,6 +376,7 @@ fun MenuContent(
             viewModel.infosPlaceResponse?.let { PlaceModal(onDismiss = { viewModel.isDialogPlaceOpen.value = false }, placeInfo = it) }
         }
     }
+
 }
 
 

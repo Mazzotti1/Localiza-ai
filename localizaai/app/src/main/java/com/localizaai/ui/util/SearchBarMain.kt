@@ -4,6 +4,8 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,7 +26,11 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -39,13 +45,29 @@ import com.localizaai.ui.ViewModel.MenuScreenViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SearchBarMain(onSearch: (String) -> Unit) {
+fun SearchBarMain(
+        viewModel: MenuScreenViewModel,
+        onSearch: (String) -> Unit,
+        isFocused: Boolean,
+        onFocusChanged: (Boolean) -> Unit
+) {
     var text by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+
+    LaunchedEffect(isFocused) {
+        if (isFocused) {
+            focusRequester.requestFocus()
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                focusManager.clearFocus()
+            }
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -54,6 +76,7 @@ fun SearchBarMain(onSearch: (String) -> Unit) {
             TextField(
                 value = text,
                 onValueChange = { newText ->
+                    viewModel.showSearchListItens.value = true
                     text = newText
                     onSearch(newText)
                 },
@@ -69,7 +92,12 @@ fun SearchBarMain(onSearch: (String) -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .padding(top = 12.dp)
-                    .border(0.8.dp, Color.Black, RoundedCornerShape(16.dp)),
+                    .border(0.8.dp, Color.Black, RoundedCornerShape(16.dp))
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { focusState ->
+                        onFocusChanged(focusState.isFocused)
+                        viewModel.showSearchListItens.value = false
+                    },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Search
@@ -77,6 +105,7 @@ fun SearchBarMain(onSearch: (String) -> Unit) {
                 keyboardActions = KeyboardActions(
                     onSearch = {
                         onSearch(text)
+                        focusManager.clearFocus()
                     }
                 ),
                 colors = TextFieldDefaults.textFieldColors(
@@ -86,7 +115,10 @@ fun SearchBarMain(onSearch: (String) -> Unit) {
                 ),
                 trailingIcon = {
                     if (text.isNotEmpty()) {
-                        IconButton(onClick = { text = "" }) {
+                        IconButton(onClick = {
+                            text = ""
+                            viewModel.showSearchListItens.value = false
+                        }) {
                             Icon(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = "Clear",

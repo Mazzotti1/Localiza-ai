@@ -44,6 +44,7 @@ import kotlinx.coroutines.launch
 
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import java.util.concurrent.TimeUnit
 import kotlin.math.atan2
@@ -77,6 +78,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private var currentLong : Double = 0.0
 
     var isDialogPlaceOpen = mutableStateOf(false)
+    var showSearchListItens = mutableStateOf(false)
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -368,10 +370,14 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val parsedResponse = gson.fromJson(autocompleteJson, Autocomplete::class.java)
 
                     autocompletePlaces.value = parsedResponse
+
                     Log.d("PlacesApiAutocomplete", "Search value : $search, lat: $lat, long: $long")
                     Log.d("PlacesApiAutocomplete", "Resultado da consulta dos locais de pesquisa: ${autocompletePlaces.value}")
                 }.onFailure { exception ->
                     Log.d("PlacesApi", "Error: ${exception.message}")
+                }
+                if(autocompletePlaces.value?.results!!.isEmpty()){
+                        showSearchListItens.value = false
                 }
             }
         }catch(e: Throwable){

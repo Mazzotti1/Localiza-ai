@@ -200,7 +200,7 @@ data class Autocomplete(
 data class AutocompleteResult(
     val type : String?,
     val text : AutocompleteText,
-    val place : AutocompletePlace,
+    val place : AutocompletePlace?,
 )
 
 data class AutocompleteText(

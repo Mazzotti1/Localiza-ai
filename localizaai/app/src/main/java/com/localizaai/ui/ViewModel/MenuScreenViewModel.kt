@@ -27,7 +27,9 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.google.common.base.Objects
 import com.google.common.util.concurrent.RateLimiter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -77,6 +79,12 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private var currentLat : Double = 0.0
     private var currentLong : Double = 0.0
 
+    var shouldStopUpdateUserLocation = mutableStateOf(false)
+    val shouldMoveCamera = mutableStateOf(true)
+    var shouldMoveCameraToNewDestiny = mutableStateOf(false)
+    var newLatLng = mutableStateOf<LatLng?>(null)
+    var selectedPlace = mutableStateOf<String>("")
+
     var isDialogPlaceOpen = mutableStateOf(false)
     var showSearchListItens = mutableStateOf(false)
     fun loadThemeState(context: Context) {
@@ -113,6 +121,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     fun onBackPressed( navController: NavController){
             navController.popBackStack()
+            shouldMoveCamera.value = true
     }
 
     fun startLocationUpdates(
@@ -384,4 +393,52 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             Log.d("PlacesApi", "Error: ${e}")
         }
     }
+
+    fun onSelectSearchListItem(context: Context, lat: String, long: String, itemName : String){
+        val latDouble = lat.toDoubleOrNull() ?: 0.0
+        val longDouble = long.toDoubleOrNull() ?: 0.0
+        selectedPlace.value = itemName;
+        val shouldCamFreeCache = compareCamItemdistance(latDouble,longDouble)
+
+        if(shouldCamFreeCache){
+            freeCacheData()
+            shouldStopUpdateUserLocation.value = true //verificar quando volta ao estado normal de false provavelmente quando eu clicar no botão de voltar
+        }
+
+        val location = createLocation(latDouble,longDouble)
+        loadPlacesAround(context, location)
+
+        newLatLng.value = LatLng(latDouble, longDouble)
+        showSearchListItens.value = false
+        shouldMoveCameraToNewDestiny.value = true
+    }
+
+    private fun compareCamItemdistance(nextLat : Double, nextLong : Double) : Boolean{
+        val earthRadius = 6371e3
+        if(currentLong != 0.0  && currentLat != 0.0  && nextLat != 0.0  && nextLong != 0.0 ){
+            val dLat = Math.toRadians(currentLat - nextLat)
+            val dLon = Math.toRadians(currentLong - nextLong)
+
+            val a = sin(dLat / 2) * sin(dLat / 2) +
+                    cos(Math.toRadians(nextLat)) * cos(Math.toRadians(currentLat)) *
+                    sin(dLon / 2) * sin(dLon / 2)
+            val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+            val distance =  earthRadius * c
+            if(distance > 1200){
+                return true
+            } else{
+                return false
+            }
+        }
+        return false
+    }
+
+    private fun createLocation(lat : Double, long: Double): Location {
+        val location = Location("CustomProvider")
+        location.latitude = lat
+        location.longitude = long
+        return location
+    }
+
 }

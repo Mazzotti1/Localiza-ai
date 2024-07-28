@@ -30,6 +30,7 @@ import com.localizaai.Model.PlaceInfo
 import com.localizaai.R
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.time.format.FormatStyle
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -161,14 +162,19 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun formatTime(time: String?): String {
-    return if (time != null) {
+    return if (time != null && time.matches(Regex("\\d{4}"))) {
         val formatter = DateTimeFormatter.ofPattern("HHmm")
-        val parsedTime = LocalTime.parse(time, formatter)
-        parsedTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+        try {
+            val parsedTime = LocalTime.parse(time, formatter)
+            parsedTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+        } catch (e: DateTimeParseException) {
+            "Formato de tempo inválido"
+        }
     } else {
         "Desconhecido"
     }
 }
+
 fun formatPopularity(popularity: Double?): Int {
      if (popularity != null) {
         val stars = popularity * 5

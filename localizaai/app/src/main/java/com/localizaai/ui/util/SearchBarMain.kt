@@ -1,5 +1,6 @@
 package com.localizaai.ui.util
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -134,7 +135,7 @@ fun SearchBarMain(
 }
 
 @Composable
-fun SearchResultList(autocomplete: Autocomplete?) {
+fun SearchResultList(context : Context, autocomplete: Autocomplete?, viewModel: MenuScreenViewModel) {
     val items = autocomplete?.results ?: emptyList()
     LazyColumn(
         modifier = Modifier
@@ -143,18 +144,28 @@ fun SearchResultList(autocomplete: Autocomplete?) {
             .background(Color.White)
     ) {
         items(items) { item ->
-            SearchResultItem(item)
+            SearchResultItem(context, item, viewModel)
         }
     }
 }
 
 @Composable
-fun SearchResultItem(item: AutocompleteResult) {
+fun SearchResultItem(context : Context, item: AutocompleteResult, viewModel: MenuScreenViewModel) {
+
+    val lat = item.place?.geocodes?.main?.latitude?.toString() ?: ""
+    val long = item.place?.geocodes?.main?.longitude?.toString() ?: ""
+
+    val itemName = item.place?.name
     Card(
         shape = RoundedCornerShape(0.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 2.dp)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                if (itemName != null) {
+                    viewModel.onSelectSearchListItem(context, lat, long, itemName)
+                }
+            }
     ) {
         Text(
             text = item.text.primary ?: "" ,

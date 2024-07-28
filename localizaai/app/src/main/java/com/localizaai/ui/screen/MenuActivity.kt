@@ -97,6 +97,7 @@ import com.localizaai.ui.util.performSearch
 class MenuActivity : ComponentActivity() {
 
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -145,7 +146,9 @@ fun RequestLocationPermissions(
 
     LaunchedEffect(permissionState) {
         if (permissionState.allPermissionsGranted) {
-            prepareDataForApi(context, viewModel, fusedLocationProviderClient)
+            if(!viewModel.shouldStopUpdateUserLocation.value){
+                prepareDataForApi(context, viewModel, fusedLocationProviderClient)
+            }
         }else{
             permissionState.launchMultiplePermissionRequest()
         }
@@ -252,11 +255,15 @@ fun MenuContent(
 
     val markerState = rememberMarkerState()
     val rotation = remember { mutableStateOf(0.0f) }
-    val shouldMoveCamera = remember { mutableStateOf(true) }
+
     var showPlaceInfoDialog by remember { mutableStateOf(false) }
     val autocompletePlaces by viewModel.autocompletePlaces
     var showSearchListItens by viewModel.showSearchListItens
     var isFocused by remember { mutableStateOf(false) }
+    val shouldMoveCamera by viewModel.shouldMoveCamera
+    val shouldMoveCameraToNewDestiny by viewModel.shouldMoveCameraToNewDestiny
+    val newLatLng by viewModel.newLatLng
+    var selectedPlace by viewModel.selectedPlace
 
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
@@ -267,11 +274,20 @@ fun MenuContent(
             permissionState.launchMultiplePermissionRequest()
         } else {
             viewModel.startLocationUpdates(fusedLocationProviderClient, context) { location ->
+
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 markerState.position = currentLatLng
-                if (shouldMoveCamera.value) {
+
+                if (shouldMoveCamera) {
                     cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
-                    shouldMoveCamera.value = false
+                    viewModel.shouldMoveCamera.value = false
+                }
+
+                if (shouldMoveCameraToNewDestiny) {
+                    newLatLng?.let {
+                        cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(it, 16f))
+                    }
+                    viewModel.shouldMoveCameraToNewDestiny.value = false
                 }
             }
         }
@@ -316,6 +332,12 @@ fun MenuContent(
         mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
     }
 
+    val customMatchedIconPlace by remember {
+        val iconMaker = com.localizaai.R.drawable.pin_marker_matched_medium
+        val customIconBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, iconMaker)
+        mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
+    }
+
     val specificPlaceResponse = viewModel.specificPlaceList
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -339,10 +361,21 @@ fun MenuContent(
                 val placeLatLng = place.geocodes?.main?.latitude?.let { place.geocodes.main.longitude?.let { it1 ->
                     LatLng(it, it1)
                 } }
+
+                // fazer verificação para ver se o nome do lugar já foi iterado para quebrar e ir direto pra proxima
+
+                Log.d("Especial", "${place.name}")
+               val icon : BitmapDescriptor
+                if(selectedPlace === place.name){
+                    icon = customMatchedIconPlace
+                } else {
+                    icon = customIconPlace
+                }
+
                 placeLatLng?.let { MarkerState(position = it) }?.let {
                     Marker(
                         state = it,
-                        icon = customIconPlace,
+                        icon = icon,
                         anchor = Offset(0.5f, 0.5f),
                         onClick = {
                             viewModel.getAllPlaceInfo(place.name, place.geocodes.main.latitude.toString(), place.geocodes.main.longitude.toString())
@@ -369,7 +402,7 @@ fun MenuContent(
             )
             if (autocompletePlaces != null && showSearchListItens) {
                 Spacer(modifier = Modifier.height(2.dp))
-                SearchResultList(autocompletePlaces)
+                SearchResultList(context, autocompletePlaces, viewModel)
             }
         }
         if (showPlaceInfoDialog) {

@@ -74,10 +74,10 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     private var shouldFreeCache : Boolean = false
     private var isFirstUpdate : Boolean = true
-    private var previousLat : Double = 0.0
-    private var previousLong : Double = 0.0
-    private var currentLat : Double = 0.0
-    private var currentLong : Double = 0.0
+    var previousLat : Double = 0.0
+    var previousLong : Double = 0.0
+    var currentLat : Double = 0.0
+    var currentLong : Double = 0.0
 
     var shouldStopUpdateUserLocation = mutableStateOf(false)
     val shouldMoveCamera = mutableStateOf(true)
@@ -300,6 +300,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val gson = Gson()
                     val parsedResponse = gson.fromJson(specificPlaceJson, SpecificPlaceResponse::class.java)
                     specificPlaceList.add(parsedResponse)
+
                     placeCache[place.fsqId] = parsedResponse
                     Log.d("PlacesApi", "Resultado da consulta dos locais especificos: $specificPlaceList")
                 }.onFailure { exception ->

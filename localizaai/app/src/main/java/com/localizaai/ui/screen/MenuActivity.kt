@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
@@ -88,7 +89,9 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberMarkerState
+import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
+import com.localizaai.ui.util.ResetButton
 import com.localizaai.ui.util.SearchBarMain
 import com.localizaai.ui.util.SearchResultList
 import com.localizaai.ui.util.performSearch
@@ -265,6 +268,11 @@ fun MenuContent(
     val newLatLng by viewModel.newLatLng
     var selectedPlace by viewModel.selectedPlace
 
+    var previousLat = viewModel.previousLat
+    var previousLong = viewModel.previousLong
+    var currentLat = viewModel.currentLat
+    var currentLong = viewModel.currentLong
+
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
     }
@@ -358,18 +366,17 @@ fun MenuContent(
             )
 
             specificPlaceResponse.forEach { place ->
-                val placeLatLng = place.geocodes?.main?.latitude?.let { place.geocodes.main.longitude?.let { it1 ->
-                    LatLng(it, it1)
-                } }
+                val placeLatLng = place.geocodes?.main?.latitude?.let {
+                    place.geocodes.main.longitude?.let { it1 ->
+                        LatLng(it, it1)
+                    }
+                }
 
-                // fazer verificação para ver se o nome do lugar já foi iterado para quebrar e ir direto pra proxima
 
-                Log.d("Especial", "${place.name}")
-               val icon : BitmapDescriptor
-                if(selectedPlace === place.name){
-                    icon = customMatchedIconPlace
+                val icon: BitmapDescriptor = if (selectedPlace == place.name) {
+                    customMatchedIconPlace
                 } else {
-                    icon = customIconPlace
+                    customIconPlace
                 }
 
                 placeLatLng?.let { MarkerState(position = it) }?.let {
@@ -407,6 +414,21 @@ fun MenuContent(
         }
         if (showPlaceInfoDialog) {
             viewModel.infosPlaceResponse?.let { PlaceModal(onDismiss = { viewModel.isDialogPlaceOpen.value = false }, placeInfo = it) }
+        }
+        ResetButton(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 16.dp, bottom = 78.dp)
+
+        ) {
+            var currentLatLng: LatLng = LatLng(0.0, 0.0)
+            if(currentLat != 0.0 && currentLong != 0.0){
+                currentLatLng = LatLng(currentLat, currentLong)
+            }else {
+                currentLatLng = LatLng(previousLat, previousLong)
+            }
+            cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
+
         }
     }
 

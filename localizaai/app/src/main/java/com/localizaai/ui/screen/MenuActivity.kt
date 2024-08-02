@@ -273,6 +273,8 @@ fun MenuContent(
     var currentLat = viewModel.currentLat
     var currentLong = viewModel.currentLong
 
+    var shouldStopUpdateUserLocation by viewModel.shouldStopUpdateUserLocation
+
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
     }
@@ -352,7 +354,8 @@ fun MenuContent(
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            onMapClick = {
+            onMapClick = { latLng ->
+                viewModel.updateClickedLatLng(latLng.latitude, latLng.longitude)
                 viewModel.isDialogPlaceOpen.value = false
                 focusManager.clearFocus()
             }
@@ -428,7 +431,7 @@ fun MenuContent(
                 currentLatLng = LatLng(previousLat, previousLong)
             }
             cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
-
+            shouldStopUpdateUserLocation = false
         }
     }
 

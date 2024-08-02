@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -87,6 +88,10 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     var isDialogPlaceOpen = mutableStateOf(false)
     var showSearchListItens = mutableStateOf(false)
+
+    private val _clickedLatLng = MutableLiveData<Pair<Double, Double>>()
+    val clickedLatLng: LiveData<Pair<Double, Double>> = _clickedLatLng
+
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -442,4 +447,17 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         return location
     }
 
+    fun updateClickedLatLng(latitude: Double, longitude: Double) {
+        _clickedLatLng.value = Pair(latitude, longitude)
+
+        val shouldClickFreeCache = compareCamItemdistance(latitude,longitude)
+
+        if(shouldClickFreeCache){
+            freeCacheData()
+            shouldStopUpdateUserLocation.value = true //verificar quando volta ao estado normal de false provavelmente quando eu clicar no botão de voltar
+        }
+
+        val location = createLocation(latitude,longitude)
+        loadPlacesAround(context, location)
+    }
 }

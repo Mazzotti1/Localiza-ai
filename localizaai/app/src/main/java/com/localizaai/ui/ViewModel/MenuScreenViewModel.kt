@@ -28,6 +28,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.common.base.Objects
@@ -447,6 +448,31 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         return location
     }
 
+    fun onResetButtonClick(): LatLng {
+
+        val currentLatLng: LatLng = if (currentLat != 0.0 && currentLong != 0.0) {
+            freeCacheData()
+            shouldStopUpdateUserLocation.value = false
+
+            val location = createLocation(currentLat,currentLong)
+            loadPlacesAround(context, location)
+
+            LatLng(currentLat, currentLong)
+
+        } else {
+            freeCacheData()
+            shouldStopUpdateUserLocation.value = false
+
+            val location = createLocation(previousLat,previousLong)
+            loadPlacesAround(context, location)
+
+            LatLng(previousLat, previousLong)
+        }
+
+        return currentLatLng
+    }
+
+
     fun updateClickedLatLng(latitude: Double, longitude: Double) {
         _clickedLatLng.value = Pair(latitude, longitude)
 
@@ -454,7 +480,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
         if(shouldClickFreeCache){
             freeCacheData()
-            shouldStopUpdateUserLocation.value = true //verificar quando volta ao estado normal de false provavelmente quando eu clicar no botão de voltar
+            shouldStopUpdateUserLocation.value = true
         }
 
         val location = createLocation(latitude,longitude)

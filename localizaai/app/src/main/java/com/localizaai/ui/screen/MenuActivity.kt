@@ -69,6 +69,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.runBlocking
 import java.util.jar.Manifest
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -91,6 +92,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberMarkerState
 import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
+import com.localizaai.ui.util.AnimatedCircle
 import com.localizaai.ui.util.ResetButton
 import com.localizaai.ui.util.SearchBarMain
 import com.localizaai.ui.util.SearchResultList
@@ -268,12 +270,7 @@ fun MenuContent(
     val newLatLng by viewModel.newLatLng
     var selectedPlace by viewModel.selectedPlace
 
-    var previousLat = viewModel.previousLat
-    var previousLong = viewModel.previousLong
-    var currentLat = viewModel.currentLat
-    var currentLong = viewModel.currentLong
-
-    var shouldStopUpdateUserLocation by viewModel.shouldStopUpdateUserLocation
+    val clickedLatLng by viewModel.clickedLatLng.observeAsState()
 
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
@@ -360,6 +357,10 @@ fun MenuContent(
                 focusManager.clearFocus()
             }
         ) {
+            clickedLatLng?.let {
+                AnimatedCircle(position = LatLng(it.first, it.second))
+            }
+
             Marker(
                 state = markerState,
                 icon = customIconPlayer,
@@ -424,14 +425,8 @@ fun MenuContent(
                 .padding(start = 16.dp, bottom = 78.dp)
 
         ) {
-            var currentLatLng: LatLng = LatLng(0.0, 0.0)
-            if(currentLat != 0.0 && currentLong != 0.0){
-                currentLatLng = LatLng(currentLat, currentLong)
-            }else {
-                currentLatLng = LatLng(previousLat, previousLong)
-            }
+            val currentLatLng = viewModel.onResetButtonClick()
             cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
-            shouldStopUpdateUserLocation = false
         }
     }
 

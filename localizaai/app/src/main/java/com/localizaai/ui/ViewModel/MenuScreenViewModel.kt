@@ -92,6 +92,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     private val _clickedLatLng = MutableLiveData<Pair<Double, Double>>()
     val clickedLatLng: LiveData<Pair<Double, Double>> = _clickedLatLng
+    var selectedRadiusFilter = mutableStateOf<String>("Padrão")
 
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -220,7 +221,15 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
         val lat = location.latitude
         val lon = location.longitude
-        val radiusList = listOf("300", "600", "800")// permitir deixar dinamico depois
+        var radiusList = listOf("")
+
+        if(selectedRadiusFilter.value ==  "Padrão"){
+            radiusList = listOf("300", "600", "800")
+        } else {
+            val radiusValue = selectedRadiusFilter.value.replace("m", "")
+            radiusList = listOf(radiusValue)
+        }
+
         val sort = "POPULARITY"
 
 

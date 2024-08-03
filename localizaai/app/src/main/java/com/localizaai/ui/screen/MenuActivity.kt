@@ -93,6 +93,7 @@ import com.google.maps.android.compose.rememberMarkerState
 import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import com.localizaai.ui.util.AnimatedCircle
+import com.localizaai.ui.util.FilterButton
 import com.localizaai.ui.util.ResetButton
 import com.localizaai.ui.util.SearchBarMain
 import com.localizaai.ui.util.SearchResultList
@@ -271,6 +272,7 @@ fun MenuContent(
     var selectedPlace by viewModel.selectedPlace
 
     val clickedLatLng by viewModel.clickedLatLng.observeAsState()
+    val isSlideDistanceVisible = remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
@@ -352,8 +354,13 @@ fun MenuContent(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             onMapClick = { latLng ->
-                viewModel.updateClickedLatLng(latLng.latitude, latLng.longitude)
+
+                if(isSlideDistanceVisible.value == false && viewModel.isDialogPlaceOpen.value == false && isFocused == false){
+                    viewModel.updateClickedLatLng(latLng.latitude, latLng.longitude)
+                }
+
                 viewModel.isDialogPlaceOpen.value = false
+                isSlideDistanceVisible.value = false
                 focusManager.clearFocus()
             }
         ) {
@@ -428,6 +435,15 @@ fun MenuContent(
             val currentLatLng = viewModel.onResetButtonClick()
             cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
         }
+        FilterButton(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp)
+                .padding(bottom = 78.dp),
+            onClick = { isSlideDistanceVisible.value = !isSlideDistanceVisible.value },
+            isVisible = isSlideDistanceVisible.value,
+            viewModel
+        )
     }
 
 }

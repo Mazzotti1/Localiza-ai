@@ -66,14 +66,12 @@ val Typography = Typography(
     titleMedium = TextStyle(
         fontFamily = RobotoCondensed,
         fontWeight = FontWeight.Bold,
-        color = Color.Black,
         fontSize = 22.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     ),
     labelMedium = TextStyle (
         fontWeight = FontWeight.Normal,
-        color = Color.Black,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp

@@ -118,6 +118,7 @@ fun SearchBarMain(
                     if (text.isNotEmpty()) {
                         IconButton(onClick = {
                             text = ""
+                            focusManager.clearFocus()
                             viewModel.showSearchListItens.value = false
                         }) {
                             Icon(

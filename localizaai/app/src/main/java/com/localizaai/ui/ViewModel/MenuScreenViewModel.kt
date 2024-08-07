@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.health.connect.datatypes.ExerciseRoute
+import android.location.Geocoder
 import android.location.Location
 import android.os.Build
 import android.os.Looper
@@ -36,12 +37,16 @@ import com.google.common.util.concurrent.RateLimiter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.localizaai.Model.Autocomplete
+import com.localizaai.Model.EventsRequest
 import com.localizaai.Model.PlaceInfo
 import com.localizaai.Model.PlaceRequest
 import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.Model.TrafficResponse
 import com.localizaai.Model.WeatherResponse
+import com.localizaai.data.repository.EventsRepository
 import com.localizaai.data.repository.PlacesRepository
+import com.localizaai.data.repository.TrafficRepository
+import com.localizaai.data.repository.WeatherRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -50,6 +55,10 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -63,7 +72,12 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var roleName by mutableStateOf("")
 
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+
     private val placesRepository = PlacesRepository(context)
+    private val eventsRepository = EventsRepository(context)
+    private val weatherRepository = WeatherRepository(context)
+    private val trafficRepository = TrafficRepository(context)
+
     var placesResponse by mutableStateOf<List<PlaceRequest>?>(null)
     var specificPlaceResponse by mutableStateOf<SpecificPlaceResponse?>(null)
     var specificPlaceList = mutableStateListOf<SpecificPlaceResponse>()
@@ -93,6 +107,11 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private val _clickedLatLng = MutableLiveData<Pair<Double, Double>>()
     val clickedLatLng: LiveData<Pair<Double, Double>> = _clickedLatLng
     var selectedRadiusFilter = mutableStateOf<String>("Padrão")
+
+    var language = mutableStateOf<String>("")
+    var weatherResponse by mutableStateOf<WeatherResponse?>(null)
+    var trafficResponse by mutableStateOf<TrafficResponse?>(null)
+    var eventsResponse by mutableStateOf<EventsRequest?>(null)
 
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -495,4 +514,136 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val location = createLocation(latitude,longitude)
         loadPlacesAround(context, location)
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun prepareDataForHeatMap(latitude: Double, longitude: Double){
+        val location = createLocation(latitude,longitude)
+
+        //informações sobre os lugares
+        loadPlacesAround(context, location)
+
+        // Eventos do dia atual
+        getEventsData()
+
+        //Clima tempo do lugar escolhido
+        getWeatherData(location)
+
+        // Traffego do local
+        getTrafficData(location)
+
+        // Data e hora atual
+        getActualTimestamp()
+
+        //Histórico de locais do banco
+        getBaseData()
+    }
+
+    fun getEventsData(){
+        val localRequest : String
+        when (language.value) {
+            "pt" -> {
+                localRequest = "pt-br.brazilian"
+            }
+            "en" -> {
+                localRequest = "en.usa"
+            }
+            else -> {
+                localRequest = "pt-br.brazilian"
+            }
+        }
+
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = eventsRepository.fetchEventsData(localRequest)
+
+            result.onSuccess { responseBody ->
+                val eventsJson = responseBody.toString()
+                val gson = Gson()
+                eventsResponse = gson.fromJson(eventsJson, EventsRequest::class.java)
+
+                Log.d("EventsApi", "Resultado da consulta de eventos é: ${result.toString()}")
+            }.onFailure { exception ->
+                Log.d("EventsApi", "Error: ${exception.message}")
+            }
+        }
+    }
+
+    fun getWeatherData (location : Location){
+        val cityName = getCityNameFromLocation(context, location ).toString()
+        val days = 3
+        val calendar = Calendar.getInstance()
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val lang = language
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = weatherRepository.fetchWeatherData(cityName, hour, days, lang.toString())
+
+            result.onSuccess { responseBody ->
+                val weatherJson = responseBody.toString()
+                val gson = Gson()
+                weatherResponse = gson.fromJson(weatherJson, WeatherResponse::class.java)
+
+                Log.d("WeatherApi", "Resultado da consulta do tempo é: ${result.toString()}")
+            }.onFailure { exception ->
+                Log.d("WeatherApi", "Error: ${exception.message}")
+            }
+        }
+    }
+
+    fun getCityNameFromLocation(context: Context, location: Location): String? {
+        return try {
+            val geocoder = Geocoder(context, Locale.getDefault())
+            val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+            if (addresses?.isNotEmpty() == true) {
+                addresses[0]?.locality
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+
+    fun getTrafficData(location: Location){
+        val lat = location.latitude
+        val lon = location.longitude
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = trafficRepository.fetchTrafficData(lat, lon)
+
+            result.onSuccess { responseBody ->
+
+                val trafficJson = responseBody.toString()
+                val gson = Gson()
+                trafficResponse = gson.fromJson(trafficJson, TrafficResponse::class.java)
+
+                Log.d("TrafficApi", "Resultado da consulta do Trafego é: ${result.toString()}")
+            }.onFailure { exception ->
+                Log.d("TrafficApi", "Error: ${exception.message}")
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getActualTimestamp(): Pair<String, String> {
+        val now = LocalDateTime.now()
+
+        val dateFormatter = DateTimeFormatter.ofPattern("ddMMyyyy")
+        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
+        val formattedDate = now.format(dateFormatter)
+        val formattedTime = now.format(timeFormatter)
+
+        return Pair(formattedDate, formattedTime)
+    }
+
+    fun getBaseData(){
+
+    }
 }
+
+
+
+

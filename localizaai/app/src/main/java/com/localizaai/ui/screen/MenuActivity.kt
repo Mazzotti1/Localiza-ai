@@ -85,15 +85,20 @@ import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.PointOfInterest
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.TileOverlay
 import com.google.maps.android.compose.rememberMarkerState
+import com.google.maps.android.heatmaps.HeatmapTileProvider
 import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import com.localizaai.ui.util.AnimatedCircle
 import com.localizaai.ui.util.FilterButton
+import com.localizaai.ui.util.HeatMapButton
 import com.localizaai.ui.util.ResetButton
 import com.localizaai.ui.util.SearchBarMain
 import com.localizaai.ui.util.SearchResultList
@@ -273,6 +278,7 @@ fun MenuContent(
 
     val clickedLatLng by viewModel.clickedLatLng.observeAsState()
     val isSlideDistanceVisible = remember { mutableStateOf(false) }
+    val showHeatMap = remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
@@ -347,8 +353,13 @@ fun MenuContent(
         mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
     }
 
-    val specificPlaceResponse = viewModel.specificPlaceList
+    val heatmapTileProvider = remember {
+        HeatmapTileProvider.Builder()
+            .data(viewModel.getHeatmapData())
+            .build()
+    }
 
+    val specificPlaceResponse = viewModel.specificPlaceList
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
@@ -362,11 +373,13 @@ fun MenuContent(
                 viewModel.isDialogPlaceOpen.value = false
                 isSlideDistanceVisible.value = false
                 focusManager.clearFocus()
+            },
+            uiSettings = remember {
+                MapUiSettings(
+                    zoomControlsEnabled =  false,
+                )
             }
         ) {
-            clickedLatLng?.let {
-                AnimatedCircle(position = LatLng(it.first, it.second))
-            }
 
             Marker(
                 state = markerState,
@@ -376,30 +389,40 @@ fun MenuContent(
                 rotation = rotation.value
             )
 
-            specificPlaceResponse.forEach { place ->
-                val placeLatLng = place.geocodes?.main?.latitude?.let {
-                    place.geocodes.main.longitude?.let { it1 ->
-                        LatLng(it, it1)
-                    }
-                }
+            clickedLatLng?.let {
+                AnimatedCircle(position = LatLng(it.first, it.second))
+            }
 
-
-                val icon: BitmapDescriptor = if (selectedPlace == place.name) {
-                    customMatchedIconPlace
-                } else {
-                    customIconPlace
-                }
-
-                placeLatLng?.let { MarkerState(position = it) }?.let {
-                    Marker(
-                        state = it,
-                        icon = icon,
-                        anchor = Offset(0.5f, 0.5f),
-                        onClick = {
-                            viewModel.getAllPlaceInfo(place.name, place.geocodes.main.latitude.toString(), place.geocodes.main.longitude.toString())
-                            true
+            if(showHeatMap.value){
+                TileOverlay(
+                    tileProvider = heatmapTileProvider
+                )
+            } else {
+                specificPlaceResponse.forEach { place ->
+                    val placeLatLng = place.geocodes?.main?.latitude?.let {
+                        place.geocodes.main.longitude?.let { it1 ->
+                            LatLng(it, it1)
                         }
-                    )
+                    }
+
+
+                    val icon: BitmapDescriptor = if (selectedPlace == place.name) {
+                        customMatchedIconPlace
+                    } else {
+                        customIconPlace
+                    }
+
+                    placeLatLng?.let { MarkerState(position = it) }?.let {
+                        Marker(
+                            state = it,
+                            icon = icon,
+                            anchor = Offset(0.5f, 0.5f),
+                            onClick = {
+                                viewModel.getAllPlaceInfo(place.name, place.geocodes.main.latitude.toString(), place.geocodes.main.longitude.toString())
+                                true
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -426,6 +449,12 @@ fun MenuContent(
         if (showPlaceInfoDialog) {
             viewModel.infosPlaceResponse?.let { PlaceModal(onDismiss = { viewModel.isDialogPlaceOpen.value = false }, placeInfo = it) }
         }
+        HeatMapButton(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 16.dp, top = 150.dp),
+            onClick = { showHeatMap.value = !showHeatMap.value }
+        )
         ResetButton(
             modifier = Modifier
                 .align(Alignment.BottomStart)

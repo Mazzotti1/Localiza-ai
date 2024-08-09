@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
             viewModel.loadLanguageState(this)
             viewModel.loadThemeState(this)
             val themeMode = viewModel.themeMode.value
-
+            val showHeatMap = remember { mutableStateOf(false) }
             NavHost(navController = navController, startDestination = "main") {
                 composable("main") {
                     MainScreen(viewModel = viewModel, navController = navController)
@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
                     LoginScreen(loginViewModel, navController, themeMode, context)
                 }
                 composable("menu") {
-                    MenuScreen(menuViewModel, navController, themeMode ,context, fusedLocationProviderClient)
+                    MenuScreen(menuViewModel, navController, themeMode ,context, fusedLocationProviderClient, showHeatMap)
                 }
                 composable("settings") {
                     SettingsScreen(settingsViewModel, navController, themeMode, context)

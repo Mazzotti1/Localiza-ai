@@ -516,19 +516,14 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun prepareDataForHeatMap(latitude: Double, longitude: Double){
-        val location = createLocation(latitude,longitude)
-        //informações sobre os lugares
+    fun loadDataForHeatMap(context : Context, location : Location){
+
+        freeCacheData()
         loadPlacesAround(context, location)
-        // Eventos do dia atual
         getEventsData()
-        //Clima tempo do lugar escolhido
         getWeatherData(location)
-        // Traffego do local
         getTrafficData(location)
-        // Data e hora atual
         getActualTimestamp()
-        //Histórico de locais do banco
         getBaseData()
     }
 
@@ -642,6 +637,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             LatLng(-29.915865, -51.170433),
         )
     }
+
 }
 
 

@@ -122,7 +122,7 @@ class MenuActivity : ComponentActivity() {
 
             val settingsViewModel: SettingsScreenViewModel = viewModel()
             val themeMode = viewModel.themeMode.value
-
+            val showHeatMap = remember { mutableStateOf(false) }
             NavHost(navController = navController, startDestination = "menu") {
                 composable("menu") {
                     MenuScreen(
@@ -130,7 +130,8 @@ class MenuActivity : ComponentActivity() {
                         navController = navController,
                         themeMode = themeMode,
                         context = context,
-                        fusedLocationProviderClient = fusedLocationProviderClient
+                        fusedLocationProviderClient = fusedLocationProviderClient,
+                        showHeatMap = showHeatMap
                     )
                 }
                 composable("settings") {
@@ -147,6 +148,7 @@ fun RequestLocationPermissions(
     context: Context,
     viewModel: MenuScreenViewModel,
     fusedLocationProviderClient: FusedLocationProviderClient,
+    showHeatMap: MutableState<Boolean>
     ) {
     val permissionState = rememberMultiplePermissionsState(
         permissions = listOf(
@@ -158,7 +160,7 @@ fun RequestLocationPermissions(
     LaunchedEffect(permissionState) {
         if (permissionState.allPermissionsGranted) {
             if(!viewModel.shouldStopUpdateUserLocation.value){
-                prepareDataForApi(context, viewModel, fusedLocationProviderClient)
+                prepareDataForApi(context, viewModel, fusedLocationProviderClient, showHeatMap)
             }
         }else{
             permissionState.launchMultiplePermissionRequest()
@@ -169,11 +171,19 @@ fun RequestLocationPermissions(
 private fun prepareDataForApi(
     context: Context,
     viewModel: MenuScreenViewModel,
-    fusedLocationProviderClient: FusedLocationProviderClient
+    fusedLocationProviderClient: FusedLocationProviderClient,
+    showHeatMap: MutableState<Boolean>
 ) {
-    viewModel.startPlacesLocationUpdates(fusedLocationProviderClient, context) { location ->
-        viewModel.loadPlacesAround(context, location)
+    if(showHeatMap.value){
+        viewModel.startPlacesLocationUpdates(fusedLocationProviderClient, context){ location ->
+            viewModel.loadDataForHeatMap(context, location)
+        }
+    } else {
+        viewModel.startPlacesLocationUpdates(fusedLocationProviderClient, context) { location ->
+            viewModel.loadPlacesAround(context, location)
+        }
     }
+
 }
 
 
@@ -186,6 +196,7 @@ fun MenuScreen(
     themeMode: Boolean,
     context: Context,
     fusedLocationProviderClient: FusedLocationProviderClient,
+    showHeatMap : MutableState<Boolean>
 ) {
     localizaaiTheme(darkTheme = themeMode) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -202,6 +213,7 @@ fun MenuScreen(
                     navController = navController,
                     context = context,
                     fusedLocationProviderClient = fusedLocationProviderClient,
+                    showHeatMap = showHeatMap
                 )
             }
         }
@@ -209,7 +221,8 @@ fun MenuScreen(
     RequestLocationPermissions(
         context = context,
         viewModel = viewModel,
-        fusedLocationProviderClient = fusedLocationProviderClient
+        fusedLocationProviderClient = fusedLocationProviderClient,
+        showHeatMap = showHeatMap
     )
 }
 
@@ -252,7 +265,8 @@ fun MenuContent(
     navController: NavController,
     context: Context,
     fusedLocationProviderClient: FusedLocationProviderClient,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showHeatMap: MutableState<Boolean>
 ) {
     val focusManager = LocalFocusManager.current
     viewModel.getTokenProps(context)
@@ -278,7 +292,7 @@ fun MenuContent(
 
     val clickedLatLng by viewModel.clickedLatLng.observeAsState()
     val isSlideDistanceVisible = remember { mutableStateOf(false) }
-    val showHeatMap = remember { mutableStateOf(false) }
+
 
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value

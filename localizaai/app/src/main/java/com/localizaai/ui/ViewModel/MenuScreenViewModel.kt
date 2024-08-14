@@ -235,7 +235,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    fun loadPlacesAround(context: Context, location: Location){
+    fun loadPlacesAround(context: Context, location: Location, logType : String = "Places Api"){
         val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
 
         val lat = location.latitude
@@ -277,10 +277,10 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                                 "Resultado da consulta dos locais é: $placesResponse"
                             )
                         }.onFailure { exception ->
-                            Log.d("PlacesApi", "Error 2: ${exception.message}")
+                            Log.d(logType, "Error 2: ${exception.message}")
                         }
                     } catch (e: Throwable) {
-                        Log.d("PlacesApi", "Error 2: ${e}")
+                        Log.d(logType, "Error 2: ${e}")
                     }
                 }
                 delay(1000L)
@@ -517,13 +517,13 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun loadDataForHeatMap(context : Context, location : Location){
-
+        val heatMap = "HeatMap"
         freeCacheData()
-        loadPlacesAround(context, location)
-        getEventsData()
-        getWeatherData(location)
-        getTrafficData(location)
-        getActualTimestamp()
+        loadPlacesAround(context, location, heatMap)
+      //getEventsData()
+      //  getWeatherData(location)
+       // getTrafficData(location)
+        //getActualTimestamp()
         getBaseData()
     }
 
@@ -632,10 +632,17 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     }
 
-    fun getHeatmapData(): List<LatLng> {
-        return listOf(
-            LatLng(-29.915865, -51.170433),
+    fun getHeatmapData(): List<LatLng?> {
+
+        val fixedPoints = listOf(
+            LatLng(previousLat, previousLong)
         )
+
+        val dynamicPoints = specificPlaceList.map { place ->
+            place.geocodes?.main?.let { LatLng(it.latitude, place.geocodes.main.longitude) }
+        }
+
+        return fixedPoints + dynamicPoints
     }
 
 }

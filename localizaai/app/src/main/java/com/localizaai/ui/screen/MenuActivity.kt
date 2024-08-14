@@ -370,8 +370,11 @@ fun MenuContent(
     val heatmapTileProvider = remember {
         HeatmapTileProvider.Builder()
             .data(viewModel.getHeatmapData())
+            .radius(50)
+            .opacity(0.4)
             .build()
     }
+
 
     val specificPlaceResponse = viewModel.specificPlaceList
     Box(modifier = Modifier.fillMaxSize()) {

@@ -122,7 +122,6 @@ class MenuActivity : ComponentActivity() {
 
             val settingsViewModel: SettingsScreenViewModel = viewModel()
             val themeMode = viewModel.themeMode.value
-            val showHeatMap = remember { mutableStateOf(false) }
             NavHost(navController = navController, startDestination = "menu") {
                 composable("menu") {
                     MenuScreen(
@@ -130,8 +129,7 @@ class MenuActivity : ComponentActivity() {
                         navController = navController,
                         themeMode = themeMode,
                         context = context,
-                        fusedLocationProviderClient = fusedLocationProviderClient,
-                        showHeatMap = showHeatMap
+                        fusedLocationProviderClient = fusedLocationProviderClient
                     )
                 }
                 composable("settings") {
@@ -142,13 +140,13 @@ class MenuActivity : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun RequestLocationPermissions(
     context: Context,
     viewModel: MenuScreenViewModel,
     fusedLocationProviderClient: FusedLocationProviderClient,
-    showHeatMap: MutableState<Boolean>
     ) {
     val permissionState = rememberMultiplePermissionsState(
         permissions = listOf(
@@ -160,7 +158,7 @@ fun RequestLocationPermissions(
     LaunchedEffect(permissionState) {
         if (permissionState.allPermissionsGranted) {
             if(!viewModel.shouldStopUpdateUserLocation.value){
-                prepareDataForApi(context, viewModel, fusedLocationProviderClient, showHeatMap)
+                prepareDataForApi(context, viewModel, fusedLocationProviderClient)
             }
         }else{
             permissionState.launchMultiplePermissionRequest()
@@ -168,24 +166,17 @@ fun RequestLocationPermissions(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun prepareDataForApi(
     context: Context,
     viewModel: MenuScreenViewModel,
     fusedLocationProviderClient: FusedLocationProviderClient,
-    showHeatMap: MutableState<Boolean>
 ) {
-    if(showHeatMap.value){
-        viewModel.startPlacesLocationUpdates(fusedLocationProviderClient, context){ location ->
-            viewModel.loadDataForHeatMap(context, location)
-        }
-    } else {
-        viewModel.startPlacesLocationUpdates(fusedLocationProviderClient, context) { location ->
-            viewModel.loadPlacesAround(context, location)
-        }
+    viewModel.startPlacesLocationUpdates(fusedLocationProviderClient, context) { location ->
+        viewModel.loadPlacesAround(context, location)
     }
 
 }
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -195,8 +186,7 @@ fun MenuScreen(
     navController: NavController,
     themeMode: Boolean,
     context: Context,
-    fusedLocationProviderClient: FusedLocationProviderClient,
-    showHeatMap : MutableState<Boolean>
+    fusedLocationProviderClient: FusedLocationProviderClient
 ) {
     localizaaiTheme(darkTheme = themeMode) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -212,8 +202,7 @@ fun MenuScreen(
                     viewModel = viewModel,
                     navController = navController,
                     context = context,
-                    fusedLocationProviderClient = fusedLocationProviderClient,
-                    showHeatMap = showHeatMap
+                    fusedLocationProviderClient = fusedLocationProviderClient
                 )
             }
         }
@@ -222,7 +211,6 @@ fun MenuScreen(
         context = context,
         viewModel = viewModel,
         fusedLocationProviderClient = fusedLocationProviderClient,
-        showHeatMap = showHeatMap
     )
 }
 
@@ -265,8 +253,7 @@ fun MenuContent(
     navController: NavController,
     context: Context,
     fusedLocationProviderClient: FusedLocationProviderClient,
-    modifier: Modifier = Modifier,
-    showHeatMap: MutableState<Boolean>
+    modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
     viewModel.getTokenProps(context)
@@ -292,6 +279,7 @@ fun MenuContent(
 
     val clickedLatLng by viewModel.clickedLatLng.observeAsState()
     val isSlideDistanceVisible = remember { mutableStateOf(false) }
+    val shouldShowHeatMap by viewModel.showHeatMap.collectAsState()
 
 
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
@@ -367,14 +355,17 @@ fun MenuContent(
         mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
     }
 
-    val heatmapTileProvider = remember {
-        HeatmapTileProvider.Builder()
+    var heatmapTileProvider by remember {
+        mutableStateOf<HeatmapTileProvider?>(null)
+    }
+
+    LaunchedEffect(viewModel.getHeatmapData()) {
+        heatmapTileProvider = HeatmapTileProvider.Builder()
             .data(viewModel.getHeatmapData())
             .radius(50)
             .opacity(0.4)
             .build()
     }
-
 
     val specificPlaceResponse = viewModel.specificPlaceList
     Box(modifier = Modifier.fillMaxSize()) {
@@ -410,9 +401,9 @@ fun MenuContent(
                 AnimatedCircle(position = LatLng(it.first, it.second))
             }
 
-            if(showHeatMap.value){
+            if (shouldShowHeatMap && heatmapTileProvider != null) {
                 TileOverlay(
-                    tileProvider = heatmapTileProvider
+                    tileProvider = heatmapTileProvider!!
                 )
             } else {
                 specificPlaceResponse.forEach { place ->
@@ -470,7 +461,7 @@ fun MenuContent(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(end = 16.dp, top = 150.dp),
-            onClick = { showHeatMap.value = !showHeatMap.value }
+            onClick = { viewModel.onHeatMapChange()}
         )
         ResetButton(
             modifier = Modifier

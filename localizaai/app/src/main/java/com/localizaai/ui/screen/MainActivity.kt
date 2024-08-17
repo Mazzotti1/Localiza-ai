@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
                     LoginScreen(loginViewModel, navController, themeMode, context)
                 }
                 composable("menu") {
-                    MenuScreen(menuViewModel, navController, themeMode ,context, fusedLocationProviderClient, showHeatMap)
+                    MenuScreen(menuViewModel, navController, themeMode ,context, fusedLocationProviderClient)
                 }
                 composable("settings") {
                     SettingsScreen(settingsViewModel, navController, themeMode, context)

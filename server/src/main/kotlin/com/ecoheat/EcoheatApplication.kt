@@ -17,5 +17,4 @@ fun main(args: Array<String>) {
 
 	val startupMessage = messageSource.getMessage("startup.message", null, locale)
 	println(startupMessage)
-
 }

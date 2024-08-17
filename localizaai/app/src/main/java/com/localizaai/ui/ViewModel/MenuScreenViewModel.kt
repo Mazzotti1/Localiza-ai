@@ -49,6 +49,8 @@ import com.localizaai.data.repository.TrafficRepository
 import com.localizaai.data.repository.WeatherRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 import kotlinx.coroutines.sync.Semaphore
@@ -96,6 +98,8 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var currentLong : Double = 0.0
 
     var shouldStopUpdateUserLocation = mutableStateOf(false)
+    private val _showHeatMap = MutableStateFlow(false)
+    val showHeatMap: StateFlow<Boolean> = _showHeatMap
     val shouldMoveCamera = mutableStateOf(true)
     var shouldMoveCameraToNewDestiny = mutableStateOf(false)
     var newLatLng = mutableStateOf<LatLng?>(null)
@@ -273,7 +277,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                             placesResponse = placeResponse
                             preparePlacesData(placesResponse)
                             Log.d(
-                                "PlacesApi",
+                                logType,
                                 "Resultado da consulta dos locais é: $placesResponse"
                             )
                         }.onFailure { exception ->
@@ -515,17 +519,18 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         loadPlacesAround(context, location)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun loadDataForHeatMap(context : Context, location : Location){
+    fun onHeatMapChange(){
         val heatMap = "HeatMap"
-        freeCacheData()
-        loadPlacesAround(context, location, heatMap)
-      //getEventsData()
-      //  getWeatherData(location)
-       // getTrafficData(location)
+
+        _showHeatMap.value = !_showHeatMap.value
+
+        //getEventsData()
+        //  getWeatherData(location)
+        // getTrafficData(location)
         //getActualTimestamp()
-        getBaseData()
+      //  getBaseData()
     }
+
 
     fun getEventsData(){
         val localRequest : String

@@ -16,12 +16,11 @@ data class History (
     val historyTimestamp: Timestamp,
 
     @ManyToOne
-    @JoinColumn(name = "fk_event")
-    val event: Events,
+    @JoinColumn(name = "historyevent")
+    val event: Event,
 
-    @Column(nullable = false)
-    val metereological: String,
+    @ManyToOne
+    @JoinColumn(name = "historyPlace")
+    val place: Place,
 
-    @Column(nullable = false)
-    val people: Int
 )

@@ -2,12 +2,12 @@ package com.ecoheat.Model
 
 import jakarta.persistence.*
 @Entity
-@Table(name = "eventCategories")
-data class EventCategories(
+@Table(name = "category")
+data class Category(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long,
+    val categoryId: Long,
 
     @Column(nullable = false)
     val type: String

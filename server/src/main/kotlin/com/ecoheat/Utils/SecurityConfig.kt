@@ -37,6 +37,7 @@ class SecurityConfig{
     val routeM = dotenv["ROUTE_M"]!!
     val routeN = dotenv["ROUTE_N"]!!
     val routeO = dotenv["ROUTE_O"]!!
+    val routeP = dotenv["ROUTE_P"]!!
     @Bean
     fun encoder(): PasswordEncoder? {
         return BCryptPasswordEncoder()
@@ -65,6 +66,7 @@ class SecurityConfig{
                 authorize(routeM, hasRole("USER"))
                 authorize(routeN, hasRole("USER"))
                 authorize(routeO, hasRole("USER"))
+                authorize(routeP, permitAll)
             }
             cors {  }
             headers { frameOptions { disable() } }

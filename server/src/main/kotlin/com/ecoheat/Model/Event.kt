@@ -1,12 +1,11 @@
 package com.ecoheat.Model
 
 import jakarta.persistence.*
-import java.awt.Point
 import java.sql.Timestamp
 
 @Entity
-@Table(name="events")
-data class Events (
+@Table(name="event")
+data class Event (
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -16,23 +15,23 @@ data class Events (
     val eventName: String,
 
     @Column(nullable = false)
-    val description: String,
+    val eventDescription: String,
+
+    @Column
+    val eventLocation : String,
 
     @Column(nullable = false)
     val eventTimestamp: Timestamp,
 
     @Column(nullable = false)
-    val eventLocation: Point,
-
-    @Column(nullable = false)
-    val maxCapacity: Int,
+    val eventCapacity: String,
 
     @ManyToOne
-    @JoinColumn(name = "fk_eventcategories")
-    val eventCategorie: EventCategories,
+    @JoinColumn(name = "fk_event_category")
+    val eventCategory: Category,
 
 ){
     companion object {
-        const val DEFAULT_EVENT_CATEGORIE_ID: Long = 8
+        const val DEFAULT_EVENT_CATEGORY_ID: Long = 8
     }
 }

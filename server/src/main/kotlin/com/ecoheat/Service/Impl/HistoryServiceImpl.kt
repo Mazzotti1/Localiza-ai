@@ -25,25 +25,55 @@ constructor(
     private lateinit var responseFromApi: Any
     private lateinit var future: CompletableFuture<Any>
 
-    override fun getHistory() {
-        try {
-            val apiResponse: ApiResponse<List<History?>>
-            future = CompletableFuture()
+    override fun getHistory(): ApiResponse<List<History?>> {
+        return try {
             val historyList = historyRepository.getAllHistory()
-            if(historyList.isNotEmpty()){
-                 apiResponse = ApiResponse(status = true, message = "Dados obtidos com sucesso", data = historyList)
-            } else {
-                 apiResponse = ApiResponse(status = false, message = "Não há eventos ou lugares no histórico", data = historyList)
-            }
 
-            onHistoryResponse(apiResponse)
+            if (historyList.isNotEmpty()) {
+                ApiResponse(status = true, message = "Dados obtidos com sucesso", data = historyList)
+            } else {
+                ApiResponse(status = false, message = "Não há eventos ou lugares no histórico", data = historyList)
+            }
         } catch (ex: RegistroIncorretoException) {
             val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
-            onHistoryFailure(errorMessage)
+            throw RegistroIncorretoException(errorMessage)
         }
     }
 
-    override fun onHistoryResponse(response: ApiResponse<List<History?>>) {
+
+    override fun getHistoryByid(id: Int?, type: String?): ApiResponse<History?> {
+        return try {
+            requireNotNull(id) { "ID must not be null" }
+            requireNotNull(type) { "Type must not be null" }
+
+            val historyItem = when (type) {
+                "event" -> historyRepository.findHistoryByEventId(id)
+                "place" -> historyRepository.findHistoryByPlaceId(id)
+                else -> throw IllegalArgumentException("Invalid type: $type")
+            }
+
+            val historyLog = when (type){
+                "event" -> "evento"
+                "place" -> "lugar"
+                else ->""
+            }
+
+            if (historyItem != null) {
+                ApiResponse(status = true, message = "Dados obtidos com sucesso", data = historyItem)
+            } else {
+                ApiResponse(status = false, message = "Não há nenhum $historyLog no histórico", data = historyItem)
+            }
+        } catch (ex: RegistroIncorretoException) {
+            val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
+            ApiResponse(status = false, message = errorMessage, data = null)
+        } catch (ex: IllegalArgumentException) {
+            val errorMessage = messageSource.getMessage("history.error.invalidType", null, locale)
+            ApiResponse(status = false, message = errorMessage, data = null)
+        }
+    }
+
+
+    override fun onHistoryResponse(response: ApiResponse<*>) {
         responseFromApi = response
         future.complete(response)
     }

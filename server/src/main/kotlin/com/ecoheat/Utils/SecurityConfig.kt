@@ -66,7 +66,7 @@ class SecurityConfig{
                 authorize(routeM, hasRole("USER"))
                 authorize(routeN, hasRole("USER"))
                 authorize(routeO, hasRole("USER"))
-                authorize(routeP, permitAll)
+                authorize(routeP, hasRole("USER"))
             }
             cors {  }
             headers { frameOptions { disable() } }

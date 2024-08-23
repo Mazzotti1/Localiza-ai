@@ -18,10 +18,16 @@ class HistoryController(private val messageSource: MessageSource) {
     val locale = Locale("pt")
 
     @GetMapping
-    fun getHistory (): ResponseEntity<Any> {
+    fun getHistory (
+        @RequestParam id: Long?,
+        @RequestParam type: String?
+    ): ResponseEntity<Any> {
         try {
-            historyService!!.getHistory()
-            val responseFromApi = historyService.getApiResponse()
+            val responseFromApi = if (id != null && type != null) {
+                 historyService!!.getHistoryByid(id.toInt(), type)
+            } else {
+                 historyService!!.getHistory()
+            }
             return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
         } catch (ex: RegistroIncorretoException) {
             val errorMessage = messageSource.getMessage("history.error.request", null, locale)

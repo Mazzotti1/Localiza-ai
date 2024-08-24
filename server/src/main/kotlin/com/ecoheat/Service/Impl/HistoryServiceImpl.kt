@@ -4,13 +4,16 @@ import com.ecoheat.Exception.RegistroIncorretoException
 
 import com.ecoheat.Service.IWeatherService
 import com.ecoheat.Apis.WeatherApi.WeatherApi
-import com.ecoheat.Model.ApiResponse
-import com.ecoheat.Model.History
+import com.ecoheat.Model.*
+import com.ecoheat.Model.DTOs.HistoryRequest
+import com.ecoheat.Repository.EventRepository
 import com.ecoheat.Repository.HistoryRepository
+import com.ecoheat.Repository.PlaceRepository
 import com.ecoheat.Service.IHistoryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
+import java.sql.Timestamp
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
@@ -18,7 +21,9 @@ import java.util.concurrent.CompletableFuture
 class HistoryServiceImpl @Autowired
 constructor(
     private val messageSource: MessageSource,
-    private val historyRepository: HistoryRepository
+    private val historyRepository: HistoryRepository,
+    private val eventRepository: EventRepository,
+    private val placeRepository: PlaceRepository
 ): IHistoryService {
 
     val locale = Locale("pt")
@@ -27,7 +32,8 @@ constructor(
 
     override fun getHistory(): ApiResponse<List<History?>> {
         return try {
-            val historyList = historyRepository.getAllHistory()
+
+            val historyList: List<History> = historyRepository.findAllByIsActive(true)
 
             if (historyList.isNotEmpty()) {
                 ApiResponse(status = true, message = "Dados obtidos com sucesso", data = historyList)
@@ -41,27 +47,16 @@ constructor(
     }
 
 
-    override fun getHistoryByid(id: Int?, type: String?): ApiResponse<History?> {
+    override fun getHistoryByid(id: Long?): ApiResponse<History?> {
         return try {
             requireNotNull(id) { "ID must not be null" }
-            requireNotNull(type) { "Type must not be null" }
 
-            val historyItem = when (type) {
-                "event" -> historyRepository.findHistoryByEventId(id)
-                "place" -> historyRepository.findHistoryByPlaceId(id)
-                else -> throw IllegalArgumentException("Invalid type: $type")
-            }
-
-            val historyLog = when (type){
-                "event" -> "evento"
-                "place" -> "lugar"
-                else ->""
-            }
+            val historyItem = historyRepository.findByHistoryIdAndIsActive(id, true)
 
             if (historyItem != null) {
                 ApiResponse(status = true, message = "Dados obtidos com sucesso", data = historyItem)
             } else {
-                ApiResponse(status = false, message = "Não há nenhum $historyLog no histórico", data = historyItem)
+                ApiResponse(status = false, message = "Não há nenhum dado no histórico para o id $id", data = historyItem)
             }
         } catch (ex: RegistroIncorretoException) {
             val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
@@ -72,6 +67,64 @@ constructor(
         }
     }
 
+    override fun setEvent(
+        parameters : HistoryRequest
+    ): ApiResponse<Any> {
+        return try {
+            if (parameters.name.isNullOrBlank() || parameters.capacity.isNullOrBlank() || parameters.description.isNullOrBlank() || parameters.location.isNullOrBlank()) {
+                throw IllegalArgumentException("Parâmetros obrigatórios não podem ser nulos ou vazios")
+            }
+
+            val newEvent = Event(null,parameters.name,parameters.description,parameters.location ,parameters.timestamp ,parameters.capacity,parameters.category ,parameters.updatedBy, true)
+            val result = eventRepository.save(newEvent)
+
+            setHistory(result.eventId, result.eventTimestamp, parameters.type, parameters.updatedBy)
+
+        } catch (ex: IllegalArgumentException) {
+            ApiResponse(status = false, message = ex.message ?: "Erro de parâmetro", data = null)
+        } catch (ex: RegistroIncorretoException) {
+            val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
+            ApiResponse(status = false, message = errorMessage, data = null)
+        }
+    }
+
+    override fun setPlace(
+        parameters : HistoryRequest
+    ): ApiResponse<Any> {
+        return try {
+            if (parameters.name.isNullOrBlank() || parameters.capacity.isNullOrBlank() || parameters.description.isNullOrBlank() || parameters.location.isNullOrBlank()) {
+                throw IllegalArgumentException("Parâmetros obrigatórios não podem ser nulos ou vazios")
+            }
+
+            val newPlace = Place(null,parameters.name,parameters.description,parameters.location ,parameters.timestamp ,parameters.capacity,parameters.category , parameters.updatedBy, true)
+            val result = placeRepository.save(newPlace)
+
+            setHistory(result.placeId, result.placeTimestamp, parameters.type, parameters.updatedBy)
+
+        } catch (ex: IllegalArgumentException) {
+            ApiResponse(status = false, message = ex.message ?: "Erro de parâmetro", data = null)
+        } catch (ex: RegistroIncorretoException) {
+            val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
+            ApiResponse(status = false, message = errorMessage, data = null)
+        }
+    }
+    fun setHistory(id: Long?, timestamp: Timestamp?, type: String?, updatedBy : Long): ApiResponse<Any> {
+        return try {
+            val historyLog = when (type) {
+                "event" -> "evento"
+                "place" -> "lugar"
+                else -> throw IllegalArgumentException("Tipo inválido: $type")
+            }
+
+            val newHistory = History(null, timestamp!!, id!!,type , updatedBy, true)
+            historyRepository.save(newHistory)
+
+            ApiResponse(status = true, message = "$historyLog criado com sucesso", data = newHistory)
+        } catch (ex: RegistroIncorretoException) {
+            val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
+            ApiResponse(status = false, message = errorMessage, data = null)
+        }
+    }
 
     override fun onHistoryResponse(response: ApiResponse<*>) {
         responseFromApi = response

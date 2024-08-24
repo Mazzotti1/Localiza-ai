@@ -1,13 +1,17 @@
 package com.ecoheat.Controller;
 
 import com.ecoheat.Exception.RegistroIncorretoException
+import com.ecoheat.Model.Category
+import com.ecoheat.Model.DTOs.HistoryRequest
 import com.ecoheat.Service.Impl.HistoryServiceImpl
 import com.ecoheat.Service.Impl.WeatherServiceImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.MessageSource
+import org.springframework.context.annotation.Description
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.sql.Timestamp
 import java.util.*
 
 @RestController
@@ -20,11 +24,10 @@ class HistoryController(private val messageSource: MessageSource) {
     @GetMapping
     fun getHistory (
         @RequestParam id: Long?,
-        @RequestParam type: String?
     ): ResponseEntity<Any> {
         try {
-            val responseFromApi = if (id != null && type != null) {
-                 historyService!!.getHistoryByid(id.toInt(), type)
+            val responseFromApi = if (id != null) {
+                 historyService!!.getHistoryByid(id)
             } else {
                  historyService!!.getHistory()
             }
@@ -34,5 +37,23 @@ class HistoryController(private val messageSource: MessageSource) {
             return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
         }
 
+    }
+
+    @PostMapping("/set")
+    fun setHistory(
+        @RequestBody parameters: HistoryRequest
+    ) : ResponseEntity<Any>{
+        try {
+            val responseFromApi = when(parameters.type) {
+                "place" -> historyService!!.setPlace(parameters)
+                "event" -> historyService!!.setEvent(parameters)
+                else -> throw IllegalArgumentException("Tipo inválido: $parameters.type")
+            }
+
+            return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
+        }catch (ex: RegistroIncorretoException){
+            val errorMessage = messageSource.getMessage("history.error.request", null, locale)
+            return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+        }
     }
 }

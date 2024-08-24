@@ -11,19 +11,22 @@ data class History (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="history_id")
-    val historyId: Long,
+    val historyId: Long? = null,
 
     @Column(name="history_timestamp",nullable = false)
     val historyTimestamp: Timestamp,
 
-    @ManyToOne
-    @JoinColumn(name = "history_event", referencedColumnName = "event_id")
-    val event: Event,
+    @Column(name = "entity_id", nullable = false)
+    val entityId: Long,
 
-    @ManyToOne
-    @JoinColumn(name = "history_place", referencedColumnName = "place_id")
-    val place: Place,
+    @Column(name = "entity_type", nullable = false)
+    val entityType: String,
+
+    @Column(name="updated_by")
+    var updatedBy:Long,
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean
+
+
 )

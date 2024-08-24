@@ -10,7 +10,7 @@ data class Place (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="place_id")
-    val placeId: Long,
+    val placeId: Long? = null,
 
     @Column(name="place_name",nullable = false)
     val placeName: String,
@@ -30,6 +30,9 @@ data class Place (
     @ManyToOne
     @JoinColumn(name = "fk_place_category")
     val placeCategory: Category,
+
+    @Column(name="updated_by")
+    var updatedBy:Long,
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean

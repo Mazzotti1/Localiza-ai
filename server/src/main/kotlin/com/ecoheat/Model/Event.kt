@@ -10,7 +10,7 @@ data class Event (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "event_id")
-    val eventId: Long,
+    val eventId: Long? = null,
 
     @Column(name="event_name",nullable = false)
     val eventName: String,
@@ -30,6 +30,9 @@ data class Event (
     @ManyToOne
     @JoinColumn(name = "fk_event_category")
     val eventCategory: Category,
+
+    @Column(name="updated_by")
+    var updatedBy:Long,
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean

@@ -18,8 +18,11 @@ data class Place (
     @Column(name="place_description",nullable = false)
     val placeDescription: String,
 
-    @Column(name="place_location")
-    val placeLocation : String,
+    @Column(name="latitude")
+    var latitude:Double,
+
+    @Column(name="longitude")
+    var longitude:Double,
 
     @Column(name="place_timestamp",nullable = false)
     val placeTimestamp: Timestamp,

@@ -45,6 +45,7 @@ dependencies {
 	testImplementation("org.springframework.security:spring-security-test")
 	implementation("com.squareup.okhttp3:okhttp:4.9.3")
 	implementation("com.google.code.gson:gson:2.8.8")
+	implementation ("org.hibernate:hibernate-spatial:6.1.0.Final")
 }
 
 tasks.withType<KotlinCompile> {

@@ -18,8 +18,11 @@ data class Event (
     @Column(name="event_description",nullable = false)
     val eventDescription: String,
 
-    @Column(name ="event_location" )
-    val eventLocation : String,
+    @Column(name="latitude")
+    var latitude:Double,
+
+    @Column(name="longitude")
+    var longitude:Double,
 
     @Column(name="event_timestamp",nullable = false)
     val eventTimestamp: Timestamp,

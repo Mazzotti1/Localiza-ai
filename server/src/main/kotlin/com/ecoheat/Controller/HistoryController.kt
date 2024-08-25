@@ -39,6 +39,26 @@ class HistoryController(private val messageSource: MessageSource) {
 
     }
 
+    @GetMapping("location")
+    fun getHistoryByLocation (
+        @RequestParam latitude: Double,
+        @RequestParam longitude: Double,
+        @RequestParam radius: String?
+    ): ResponseEntity<Any> {
+        try {
+            val responseFromApi = if (radius != null) {
+                  historyService!!.getHistoryByLocation(latitude,longitude, radius)
+            }else {
+                val errorMessage = messageSource.getMessage("history.error.request", null, locale)
+                return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+            }
+            return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
+        } catch (ex: RegistroIncorretoException) {
+            val errorMessage = messageSource.getMessage("history.error.request", null, locale)
+            return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+        }
+    }
+
     @PostMapping("/set")
     fun setHistory(
         @RequestBody parameters: HistoryRequest

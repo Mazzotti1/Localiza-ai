@@ -22,6 +22,12 @@ data class History (
     @Column(name = "entity_type", nullable = false)
     val entityType: String,
 
+    @Column(name="latitude")
+    var latitude:Double,
+
+    @Column(name="longitude")
+    var longitude:Double,
+
     @Column(name="updated_by")
     var updatedBy:Long,
 

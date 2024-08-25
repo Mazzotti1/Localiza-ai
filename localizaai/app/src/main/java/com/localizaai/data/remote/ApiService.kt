@@ -1,6 +1,7 @@
 package com.localizaai.data.remote
 
 import com.localizaai.Model.Delete
+import com.localizaai.Model.HistoryRequest
 import com.localizaai.Model.Login
 import com.localizaai.Model.Register
 import okhttp3.ResponseBody
@@ -73,4 +74,11 @@ interface ApiService {
         @Query("lat") lat: String,
         @Query("long") long: String
     ): Response<ResponseBody>
+
+    @GET("/history/{userId}")
+    suspend fun getHistoryData (@Path("id") id: String): Response<ResponseBody>
+
+    @POST("/history/set")
+    suspend fun setHistory(@Body request: HistoryRequest): Response<ResponseBody>
+
 }

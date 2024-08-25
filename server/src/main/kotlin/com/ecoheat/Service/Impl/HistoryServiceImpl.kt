@@ -11,6 +11,7 @@ import com.ecoheat.Repository.HistoryRepository
 import com.ecoheat.Repository.PlaceRepository
 import com.ecoheat.Service.IHistoryService
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.parsing.Location
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
@@ -67,18 +68,37 @@ constructor(
         }
     }
 
+    override fun getHistoryByLocation(latitude: Double, longitude: Double, radius: String): ApiResponse<List<History?>> {
+        return try {
+
+            val historyList: List<History> = historyRepository.findByHistoryLocation(latitude,longitude,radius.toDouble())
+
+            if (historyList.isNotEmpty()) {
+                ApiResponse(status = true, message = "Dados obtidos com sucesso", data = historyList)
+            } else {
+                ApiResponse(status = false, message = "Não há nenhum dado no histórico para a location ", data = historyList)
+            }
+        } catch (ex: RegistroIncorretoException) {
+            val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
+            ApiResponse(status = false, message = errorMessage, data = null)
+        } catch (ex: IllegalArgumentException) {
+            val errorMessage = messageSource.getMessage("history.error.invalidType", null, locale)
+            ApiResponse(status = false, message = errorMessage, data = null)
+        }
+    }
+
     override fun setEvent(
         parameters : HistoryRequest
     ): ApiResponse<Any> {
         return try {
-            if (parameters.name.isNullOrBlank() || parameters.capacity.isNullOrBlank() || parameters.description.isNullOrBlank() || parameters.location.isNullOrBlank()) {
+            if (parameters.name.isNullOrBlank() || parameters.capacity.isNullOrBlank() || parameters.description.isNullOrBlank() ) {
                 throw IllegalArgumentException("Parâmetros obrigatórios não podem ser nulos ou vazios")
             }
 
-            val newEvent = Event(null,parameters.name,parameters.description,parameters.location ,parameters.timestamp ,parameters.capacity,parameters.category ,parameters.updatedBy, true)
+            val newEvent = Event(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.timestamp ,parameters.capacity,parameters.category ,parameters.updatedBy, true)
             val result = eventRepository.save(newEvent)
 
-            setHistory(result.eventId, result.eventTimestamp, parameters.type, parameters.updatedBy)
+            setHistory(result.eventId, result.eventTimestamp, parameters.type,parameters.latitude,parameters.longitude, parameters.updatedBy)
 
         } catch (ex: IllegalArgumentException) {
             ApiResponse(status = false, message = ex.message ?: "Erro de parâmetro", data = null)
@@ -92,14 +112,14 @@ constructor(
         parameters : HistoryRequest
     ): ApiResponse<Any> {
         return try {
-            if (parameters.name.isNullOrBlank() || parameters.capacity.isNullOrBlank() || parameters.description.isNullOrBlank() || parameters.location.isNullOrBlank()) {
+            if (parameters.name.isNullOrBlank() || parameters.capacity.isNullOrBlank() || parameters.description.isNullOrBlank() ) {
                 throw IllegalArgumentException("Parâmetros obrigatórios não podem ser nulos ou vazios")
             }
 
-            val newPlace = Place(null,parameters.name,parameters.description,parameters.location ,parameters.timestamp ,parameters.capacity,parameters.category , parameters.updatedBy, true)
+            val newPlace = Place(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.timestamp ,parameters.capacity,parameters.category , parameters.updatedBy, true)
             val result = placeRepository.save(newPlace)
 
-            setHistory(result.placeId, result.placeTimestamp, parameters.type, parameters.updatedBy)
+            setHistory(result.placeId, result.placeTimestamp, parameters.type,parameters.latitude,parameters.longitude, parameters.updatedBy)
 
         } catch (ex: IllegalArgumentException) {
             ApiResponse(status = false, message = ex.message ?: "Erro de parâmetro", data = null)
@@ -108,7 +128,7 @@ constructor(
             ApiResponse(status = false, message = errorMessage, data = null)
         }
     }
-    fun setHistory(id: Long?, timestamp: Timestamp?, type: String?, updatedBy : Long): ApiResponse<Any> {
+    fun setHistory(id: Long?, timestamp: Timestamp?, type: String?,latitude : Double, longitude: Double, updatedBy : Long): ApiResponse<Any> {
         return try {
             val historyLog = when (type) {
                 "event" -> "evento"
@@ -116,7 +136,7 @@ constructor(
                 else -> throw IllegalArgumentException("Tipo inválido: $type")
             }
 
-            val newHistory = History(null, timestamp!!, id!!,type , updatedBy, true)
+            val newHistory = History(null, timestamp!!, id!!,type, latitude,longitude ,updatedBy, true)
             historyRepository.save(newHistory)
 
             ApiResponse(status = true, message = "$historyLog criado com sucesso", data = newHistory)

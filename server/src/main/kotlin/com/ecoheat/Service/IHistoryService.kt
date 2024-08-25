@@ -11,4 +11,5 @@ interface IHistoryService {
     fun onHistoryFailure(error: String)
     fun setEvent(parameters : HistoryRequest): ApiResponse<Any>
     fun setPlace(parameters : HistoryRequest): ApiResponse<Any>
+    fun getHistoryByLocation(latitude: Double,longitude: Double, radius: String): ApiResponse<List<History?>>
 }

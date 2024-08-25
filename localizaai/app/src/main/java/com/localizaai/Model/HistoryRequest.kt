@@ -1,16 +1,19 @@
-package com.ecoheat.Model.DTOs
+package com.localizaai.Model
 
-import com.ecoheat.Model.Category
 import java.sql.Timestamp
 
 data class HistoryRequest(
     val name: String?,
     val capacity: String?,
     val description: String?,
-    val latitude: Double,
-    val longitude: Double,
+    val location: String?,
     val timestamp: Timestamp,
-    val category: Category,
+    val category: CategoryHistory,
     val type: String?,
     val updatedBy:Long
+)
+
+data class CategoryHistory (
+    val categoryId : Long?,
+    val type : String?
 )

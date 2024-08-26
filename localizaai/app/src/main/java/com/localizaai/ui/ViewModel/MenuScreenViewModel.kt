@@ -37,13 +37,17 @@ import com.google.common.util.concurrent.RateLimiter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.localizaai.Model.Autocomplete
+import com.localizaai.Model.CategoryHistory
 import com.localizaai.Model.EventsRequest
+import com.localizaai.Model.HistoryRequest
+import com.localizaai.Model.HistoryResponse
 import com.localizaai.Model.PlaceInfo
 import com.localizaai.Model.PlaceRequest
 import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.Model.TrafficResponse
 import com.localizaai.Model.WeatherResponse
 import com.localizaai.data.repository.EventsRepository
+import com.localizaai.data.repository.HistoryRespository
 import com.localizaai.data.repository.PlacesRepository
 import com.localizaai.data.repository.TrafficRepository
 import com.localizaai.data.repository.WeatherRepository
@@ -79,6 +83,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private val eventsRepository = EventsRepository(context)
     private val weatherRepository = WeatherRepository(context)
     private val trafficRepository = TrafficRepository(context)
+    private val historyRepository = HistoryRespository(context)
 
     var placesResponse by mutableStateOf<List<PlaceRequest>?>(null)
     var specificPlaceResponse by mutableStateOf<SpecificPlaceResponse?>(null)
@@ -116,6 +121,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var weatherResponse by mutableStateOf<WeatherResponse?>(null)
     var trafficResponse by mutableStateOf<TrafficResponse?>(null)
     var eventsResponse by mutableStateOf<EventsRequest?>(null)
+    var historyResponse by mutableStateOf<HistoryResponse?>(null)
 
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -339,6 +345,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val parsedResponse = gson.fromJson(specificPlaceJson, SpecificPlaceResponse::class.java)
                     specificPlaceList.add(parsedResponse)
 
+//                    saveHistoryPlace(parsedResponse)
                     placeCache[place.fsqId] = parsedResponse
                     Log.d("PlacesApi", "Resultado da consulta dos locais especificos: $specificPlaceList")
                 }.onFailure { exception ->
@@ -350,7 +357,6 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    // chamar ao clicar e escolher um lugar especifico
     fun getAllPlaceInfo(name : String, lat: String, long : String){
         try {
             viewModelScope.launch(Dispatchers.IO) {
@@ -519,16 +525,16 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         loadPlacesAround(context, location)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun onHeatMapChange(){
         val heatMap = "HeatMap"
-
         _showHeatMap.value = !_showHeatMap.value
 
-        //getEventsData()
-        //  getWeatherData(location)
-        // getTrafficData(location)
-        //getActualTimestamp()
-      //  getBaseData()
+        val location = LatLng(currentLat, currentLong)
+        getEventsData()
+        getWeatherData(location)
+        getTrafficData(location)
+        getBaseData()
     }
 
 
@@ -546,7 +552,6 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             }
         }
 
-
         viewModelScope.launch(Dispatchers.IO) {
             val result = eventsRepository.fetchEventsData(localRequest)
 
@@ -562,7 +567,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    fun getWeatherData (location : Location){
+    fun getWeatherData (location : LatLng){
         val cityName = getCityNameFromLocation(context, location ).toString()
         val days = 3
         val calendar = Calendar.getInstance()
@@ -584,7 +589,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    fun getCityNameFromLocation(context: Context, location: Location): String? {
+    fun getCityNameFromLocation(context: Context, location: LatLng): String? {
         return try {
             val geocoder = Geocoder(context, Locale.getDefault())
             val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
@@ -600,7 +605,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     }
 
 
-    fun getTrafficData(location: Location){
+    fun getTrafficData(location: LatLng){
         val lat = location.latitude
         val lon = location.longitude
 
@@ -634,10 +639,34 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     }
 
     fun getBaseData(){
+        viewModelScope.launch(Dispatchers.IO) {
 
+            val radius = when (selectedRadiusFilter.toString()) {
+                "Padrão" -> 800
+                else -> selectedRadiusFilter.toString().toIntOrNull() ?: 800
+            }
+
+            val result = historyRepository.fetchHistoryDataByLocation(currentLat,currentLong, radius.toString())
+
+            result.onSuccess { responseBody ->
+                val historyJson = responseBody.toString()
+                val gson = Gson()
+                historyResponse = gson.fromJson(historyJson, HistoryResponse::class.java)
+
+                Log.d("HistoryApi", "Resultado da consulta do histórico por localização é: ${result.toString()}")
+            }.onFailure { exception ->
+                Log.d("HistoryApi", "Error: ${exception.message}")
+            }
+        }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun getHeatmapData(): List<LatLng?> {
+        val eventData = eventsResponse
+        val weatherData = weatherResponse
+        val trafficData = trafficResponse
+        val historyData = historyResponse
+        val timestampData = getActualTimestamp()
 
         val fixedPoints = listOf(
             LatLng(previousLat, previousLong)
@@ -650,8 +679,39 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         return fixedPoints + dynamicPoints
     }
 
-}
+//    fun saveHistoryPlace(parsedResponse: SpecificPlaceResponse){
+//        val category = CategoryHistory(
+//
+//        )
+//
+//        val historyRequest = HistoryRequest(
+//            name = parsedResponse.name,
+//            capacity = parsedResponse.,
+//            description = parsedResponse.,
+//            latitude = parsedResponse.geocodes.main.latitude,
+//            longitude = parsedResponse.geocodes.main.longitude,
+//            timestamp = ,
+//            category = parsedResponse.categories,
+//            type = parsedResponse.,
+//            updatedBy =
+//        )
+//
+//        viewModelScope.launch(Dispatchers.IO) {
+//            val result = historyRepository.setHistoryData(historyRequest)
+//
+//            result.onSuccess { responseBody ->
+//                val historyJson = responseBody.toString()
+//                val gson = Gson()
+//                historyResponse = gson.fromJson(historyJson, HistoryResponse::class.java)
+//
+//                Log.d("HistoryApi", "Resultado da inserção de lugar: ${result.toString()}")
+//            }.onFailure { exception ->
+//                Log.d("HistoryApi", "Error: ${exception.message}")
+//            }
+//        }
+//    }
 
+}
 
 
 

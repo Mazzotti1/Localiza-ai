@@ -50,4 +50,23 @@ class HistoryRespository(private val context: Context) {
             Result.failure(e)
         }
     }
+
+    suspend fun fetchHistoryDataByLocation(lat: Double,long: Double,radius: String): Result<String> {
+        return try {
+            val response = withContext(Dispatchers.IO) {
+                apiService.getHistoryDataByLocation(lat,long,radius)
+            }
+
+            if (response.isSuccessful) {
+                val responseBody = response.body()?.string()
+                Result.success(responseBody ?: "")
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Result.failure(Exception(errorBody ?: "Erro inesperado no Events"))
+            }
+        } catch (e: Exception) {
+            Log.d("Events", "Erro ao fazer a requisição: $e")
+            Result.failure(e)
+        }
+    }
 }

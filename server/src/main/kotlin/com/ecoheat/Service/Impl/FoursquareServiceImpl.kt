@@ -93,14 +93,30 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
     }
 
     fun getApiResponse(): List<FoursquarePlace> {
-        return future.join() as List<FoursquarePlace>
+        val response = future.join()
+        return if (response is List<*>) {
+            @Suppress("UNCHECKED_CAST")
+            response as List<FoursquarePlace>
+        } else {
+            throw IllegalStateException("Expected a List<FoursquarePlace> but received $response")
+        }
     }
 
-    fun getSpecificApiResponse(): String{
-        return future.join() as String
+    fun getSpecificApiResponse(): String {
+        val response = future.join()
+        return if (response is String) {
+            response
+        } else  {
+            throw IllegalStateException("Expected a String but received $response")
+        }
     }
 
-    fun getAutocompletePlacesResponse(): String{
-        return future.join() as String
+    fun getAutocompletePlacesResponse(): String {
+        val response = future.join()
+        return if (response is String) {
+            response
+        } else {
+            throw IllegalStateException("Expected a String but received $response")
+        }
     }
 }

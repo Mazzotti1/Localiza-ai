@@ -27,20 +27,12 @@ data class Place (
     @Column(name="place_timestamp",nullable = false)
     val placeTimestamp: Timestamp,
 
-    @Column(name="place_capacity",nullable = false)
-    val placeCapacity: String,
-
-    @ManyToOne
-    @JoinColumn(name = "fk_place_category")
-    val placeCategory: Category,
+    @JoinColumn(name = "category")
+    val placeCategory: String,
 
     @Column(name="updated_by")
     var updatedBy:Long,
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean
-    ){
-    companion object {
-        const val DEFAULT_PLACE_CATEGORY_ID: Long = 8
-    }
-}
+    )

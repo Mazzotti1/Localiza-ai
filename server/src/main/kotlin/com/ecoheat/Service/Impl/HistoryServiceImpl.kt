@@ -91,11 +91,17 @@ constructor(
         parameters : HistoryRequest
     ): ApiResponse<Any> {
         return try {
-            if (parameters.name.isNullOrBlank() || parameters.capacity.isNullOrBlank() || parameters.description.isNullOrBlank() ) {
+
+            var isDuplicatedEvent = parameters.name?.let { eventRepository.findEventByName(it) }
+            if(isDuplicatedEvent != 0){
+                return ApiResponse(status = false, message = "Lugar já existe", data = null)
+            }
+
+            if (parameters.name.isNullOrBlank() || parameters.description.isNullOrBlank() ) {
                 throw IllegalArgumentException("Parâmetros obrigatórios não podem ser nulos ou vazios")
             }
 
-            val newEvent = Event(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.timestamp ,parameters.capacity,parameters.category ,parameters.updatedBy, true)
+            val newEvent = Event(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.timestamp ,parameters.category ,parameters.updatedBy, true)
             val result = eventRepository.save(newEvent)
 
             setHistory(result.eventId, result.eventTimestamp, parameters.type,parameters.latitude,parameters.longitude, parameters.updatedBy)
@@ -112,11 +118,17 @@ constructor(
         parameters : HistoryRequest
     ): ApiResponse<Any> {
         return try {
-            if (parameters.name.isNullOrBlank() || parameters.capacity.isNullOrBlank() || parameters.description.isNullOrBlank() ) {
+
+            var isDuplicatedPlace = parameters.name?.let { placeRepository.findPlaceByName(it) }
+            if(isDuplicatedPlace != 0){
+                return ApiResponse(status = false, message = "Lugar já existe", data = null)
+            }
+
+            if (parameters.name.isNullOrBlank()  || parameters.description.isNullOrBlank() ) {
                 throw IllegalArgumentException("Parâmetros obrigatórios não podem ser nulos ou vazios")
             }
 
-            val newPlace = Place(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.timestamp ,parameters.capacity,parameters.category , parameters.updatedBy, true)
+            val newPlace = Place(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.timestamp,parameters.category , parameters.updatedBy, true)
             val result = placeRepository.save(newPlace)
 
             setHistory(result.placeId, result.placeTimestamp, parameters.type,parameters.latitude,parameters.longitude, parameters.updatedBy)

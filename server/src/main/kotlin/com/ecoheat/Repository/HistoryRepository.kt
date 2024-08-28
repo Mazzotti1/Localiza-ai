@@ -30,6 +30,22 @@ interface HistoryRepository : JpaRepository<History, Long> {
 
 
 }
-interface EventRepository : JpaRepository<Event, Long>
-interface PlaceRepository : JpaRepository<Place, Long>
+interface EventRepository : JpaRepository<Event, Long>{
+    @Query(value = """
+    select count(e.event_id) 
+        from event e 
+    where e.event_name = :name
+        and e.is_active = true
+    """, nativeQuery = true)
+    fun findEventByName(@Param("name") name: String) : Int
+}
+interface PlaceRepository : JpaRepository<Place, Long> {
+    @Query(value = """
+    select count(p.place_id) 
+        from place p 
+    where p.place_name = :name
+        and p.is_active = true
+    """, nativeQuery = true)
+    fun findPlaceByName(@Param("name") name: String) : Int
+}
 

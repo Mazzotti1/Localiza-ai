@@ -4,32 +4,26 @@ import java.sql.Timestamp
 
 data class HistoryRequest(
     val name: String?,
-    val capacity: String?,
     val description: String?,
     val latitude: Double,
     val longitude: Double,
-    val timestamp: Timestamp,
-    val category: CategoryHistory,
+    val timestamp: String,
+    val category: String,
     val type: String?,
     val updatedBy:Long
 )
 
-data class CategoryHistory (
-    val categoryId : Long?,
-    val type : String?
-)
-
-
 data class HistoryResponse(
-    val status : Boolean,
-    val message : String,
-    val data : List<History>
+    val status: Boolean,
+    val message: String,
+    val data: History
 )
 
 data class History(
     val historyId : Int,
-    val historyTimestamp: Timestamp,
+    val historyTimestamp: String,
     val entityId : Int,
+    val entityType: String,
     val latitude : Double,
     val longitude: Double,
     val updatedBy : Long,

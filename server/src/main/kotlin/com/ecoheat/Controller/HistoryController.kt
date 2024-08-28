@@ -1,17 +1,13 @@
 package com.ecoheat.Controller;
 
 import com.ecoheat.Exception.RegistroIncorretoException
-import com.ecoheat.Model.Category
 import com.ecoheat.Model.DTOs.HistoryRequest
 import com.ecoheat.Service.Impl.HistoryServiceImpl
-import com.ecoheat.Service.Impl.WeatherServiceImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.MessageSource
-import org.springframework.context.annotation.Description
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.sql.Timestamp
 import java.util.*
 
 @RestController

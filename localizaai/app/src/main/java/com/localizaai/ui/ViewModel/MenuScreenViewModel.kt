@@ -37,7 +37,6 @@ import com.google.common.util.concurrent.RateLimiter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.localizaai.Model.Autocomplete
-import com.localizaai.Model.CategoryHistory
 import com.localizaai.Model.EventsRequest
 import com.localizaai.Model.HistoryRequest
 import com.localizaai.Model.HistoryResponse
@@ -62,6 +61,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
@@ -74,6 +74,7 @@ import kotlin.math.sqrt
 class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     val themeMode = mutableStateOf(true)
+    var userId by mutableStateOf("")
     var username by mutableStateOf("")
     var roleName by mutableStateOf("")
 
@@ -145,6 +146,8 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
                     val roleNameMatchResult = Regex("name=(\\w+)").find(roleClaim)
                     roleName = roleNameMatchResult?.groupValues?.get(1).toString()
+
+                    userId = jwt.getClaim("sub").asString()
 
                 } catch (e: JWTDecodeException) {
                     println("Erro ao decodificar o token: ${e.message}")
@@ -307,7 +310,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                             getSpecificPlaceData(place)
                         }
                     }
-                    delay(1000L)
+                    delay(1500L)
                 }
             }
         }
@@ -325,6 +328,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         return Result.failure(Exception("Failed after $retries retries"))
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun getSpecificPlaceData(place : PlaceRequest){
         val cachedPlace = placeCache[place.fsqId]
         if (cachedPlace != null) {
@@ -345,7 +349,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val parsedResponse = gson.fromJson(specificPlaceJson, SpecificPlaceResponse::class.java)
                     specificPlaceList.add(parsedResponse)
 
-//                    saveHistoryPlace(parsedResponse)
+                    saveHistoryPlace(parsedResponse)
                     placeCache[place.fsqId] = parsedResponse
                     Log.d("PlacesApi", "Resultado da consulta dos locais especificos: $specificPlaceList")
                 }.onFailure { exception ->
@@ -530,11 +534,11 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val heatMap = "HeatMap"
         _showHeatMap.value = !_showHeatMap.value
 
-        val location = LatLng(currentLat, currentLong)
-        getEventsData()
-        getWeatherData(location)
-        getTrafficData(location)
-        getBaseData()
+//        val location = LatLng(currentLat, currentLong)
+//        getEventsData()
+//        getWeatherData(location)
+//        getTrafficData(location)
+//        getBaseData()
     }
 
 
@@ -673,43 +677,46 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         )
 
         val dynamicPoints = specificPlaceList.map { place ->
-            place.geocodes?.main?.let { LatLng(it.latitude, place.geocodes.main.longitude) }
+            val latitude = place.geocodes?.main?.latitude ?: 0.0
+            val longitude = place.geocodes?.main?.longitude ?: 0.0
+            LatLng(latitude, longitude)
         }
 
         return fixedPoints + dynamicPoints
     }
 
-//    fun saveHistoryPlace(parsedResponse: SpecificPlaceResponse){
-//        val category = CategoryHistory(
-//
-//        )
-//
-//        val historyRequest = HistoryRequest(
-//            name = parsedResponse.name,
-//            capacity = parsedResponse.,
-//            description = parsedResponse.,
-//            latitude = parsedResponse.geocodes.main.latitude,
-//            longitude = parsedResponse.geocodes.main.longitude,
-//            timestamp = ,
-//            category = parsedResponse.categories,
-//            type = parsedResponse.,
-//            updatedBy =
-//        )
-//
-//        viewModelScope.launch(Dispatchers.IO) {
-//            val result = historyRepository.setHistoryData(historyRequest)
-//
-//            result.onSuccess { responseBody ->
-//                val historyJson = responseBody.toString()
-//                val gson = Gson()
-//                historyResponse = gson.fromJson(historyJson, HistoryResponse::class.java)
-//
-//                Log.d("HistoryApi", "Resultado da inserção de lugar: ${result.toString()}")
-//            }.onFailure { exception ->
-//                Log.d("HistoryApi", "Error: ${exception.message}")
-//            }
-//        }
-//    }
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun saveHistoryPlace(parsedResponse: SpecificPlaceResponse){
+
+        val categories: List<String> = parsedResponse.categories.map { it.name }
+        val category: String = categories.joinToString("/ ")
+        val currentTimestamp = OffsetDateTime.now().toString()
+
+        val historyRequest = HistoryRequest(
+            name = parsedResponse.name,
+            description = parsedResponse.closed_bucket,
+            latitude = parsedResponse.geocodes?.main?.latitude ?: 0.0,
+            longitude = parsedResponse.geocodes?.main?.longitude ?: 0.0,
+            timestamp = currentTimestamp,
+            category = category,
+            type = "place",
+            updatedBy = userId.toLong()
+        )
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = historyRepository.setHistoryData(historyRequest)
+
+            result.onSuccess { responseBody ->
+                val historyJson = responseBody.toString()
+                val gson = Gson()
+                historyResponse = gson.fromJson(historyJson, HistoryResponse::class.java)
+
+                Log.d("HistoryApi", "Resultado da inserção de lugar: ${result.toString()}")
+            }.onFailure { exception ->
+                Log.d("HistoryApi", "Error: ${exception.message}")
+            }
+        }
+    }
 
 }
 

@@ -27,20 +27,12 @@ data class Event (
     @Column(name="event_timestamp",nullable = false)
     val eventTimestamp: Timestamp,
 
-    @Column(name="event_capacity",nullable = false)
-    val eventCapacity: String,
-
-    @ManyToOne
-    @JoinColumn(name = "fk_event_category")
-    val eventCategory: Category,
+    @JoinColumn(name = "category")
+    val eventCategory: String,
 
     @Column(name="updated_by")
     var updatedBy:Long,
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean
-){
-    companion object {
-        const val DEFAULT_EVENT_CATEGORY_ID: Long = 8
-    }
-}
+)

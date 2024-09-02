@@ -16,7 +16,7 @@ data class HistoryRequest(
 data class HistoryResponse(
     val status: Boolean,
     val message: String,
-    val data: History
+    val data: List<History>
 )
 
 data class History(

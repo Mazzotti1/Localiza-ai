@@ -81,6 +81,11 @@ interface ApiService {
     @POST("/history/set")
     suspend fun setHistory(@Body request: HistoryRequest): Response<ResponseBody>
 
-    @GET("/history/{userId}")
-    suspend fun getHistoryDataByLocation (@Path("lat") lat: Double, @Path("long") long: Double, @Path("radius") radius: String ): Response<ResponseBody>
+    @GET("/history/location")
+    suspend fun getHistoryDataByLocation(
+        @Query("latitude") lat: Double,
+        @Query("longitude") long: Double,
+        @Query("radius") radius: String
+    ): Response<ResponseBody>
+
 }

@@ -114,7 +114,6 @@ class MenuActivity : ComponentActivity() {
         setContent {
             val context = applicationContext
             val viewModel: MenuScreenViewModel = viewModel(factory = MenuScreenViewModelFactory(context))
-
             val navController = rememberNavController()
 
             fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
@@ -155,13 +154,16 @@ fun RequestLocationPermissions(
         )
     )
 
-    LaunchedEffect(permissionState) {
+    DisposableEffect(permissionState) {
         if (permissionState.allPermissionsGranted) {
             if(!viewModel.shouldStopUpdateUserLocation.value){
                 prepareDataForApi(context, viewModel, fusedLocationProviderClient)
             }
         }else{
             permissionState.launchMultiplePermissionRequest()
+        }
+        onDispose {
+
         }
     }
 }
@@ -281,12 +283,11 @@ fun MenuContent(
     val isSlideDistanceVisible = remember { mutableStateOf(false) }
     val shouldShowHeatMap by viewModel.showHeatMap.collectAsState()
 
-
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
     }
 
-    LaunchedEffect(permissionState) {
+    DisposableEffect(permissionState) {
         if (!permissionState.allPermissionsGranted) {
             permissionState.launchMultiplePermissionRequest()
         } else {
@@ -294,7 +295,6 @@ fun MenuContent(
 
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 markerState.position = currentLatLng
-
                 if (shouldMoveCamera) {
                     cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
                     viewModel.shouldMoveCamera.value = false
@@ -308,7 +308,11 @@ fun MenuContent(
                 }
             }
         }
+        onDispose {
+            viewModel.stopLocationUpdates(fusedLocationProviderClient)
+        }
     }
+
 
     val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)

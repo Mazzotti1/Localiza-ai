@@ -169,8 +169,4 @@ constructor(
         future.complete(apiResponse)
     }
 
-
-    fun getApiResponse(): Any {
-        return future.join()
-    }
 }

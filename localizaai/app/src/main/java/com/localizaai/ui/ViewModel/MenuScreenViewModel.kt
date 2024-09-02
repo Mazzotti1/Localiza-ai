@@ -107,6 +107,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private val _showHeatMap = MutableStateFlow(false)
     val showHeatMap: StateFlow<Boolean> = _showHeatMap
     val shouldMoveCamera = mutableStateOf(true)
+    val shouldRegisterUpdate = mutableStateOf(true)
     var shouldMoveCameraToNewDestiny = mutableStateOf(false)
     var newLatLng = mutableStateOf<LatLng?>(null)
     var selectedPlace = mutableStateOf<String>("")
@@ -121,9 +122,10 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var language = mutableStateOf<String>("")
     var weatherResponse by mutableStateOf<WeatherResponse?>(null)
     var trafficResponse by mutableStateOf<TrafficResponse?>(null)
-    var eventsResponse by mutableStateOf<EventsRequest?>(null)
+    var eventsResponse by mutableStateOf<List<EventsRequest>>(emptyList())
     var historyResponse by mutableStateOf<HistoryResponse?>(null)
 
+    private var locationCallback: LocationCallback? = null
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -159,8 +161,8 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     }
 
     fun onBackPressed( navController: NavController){
-            navController.popBackStack()
-            shouldMoveCamera.value = true
+        shouldMoveCamera.value = true
+        navController.popBackStack()
     }
 
     fun startLocationUpdates(
@@ -174,25 +176,25 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
 
-        val locationCallback = object : LocationCallback() {
+        locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { location ->
                     onLocationUpdate(location)
 
-                    if(isFirstUpdate){
+                    if (isFirstUpdate) {
                         previousLat = location.latitude
                         previousLong = location.longitude
                         isFirstUpdate = false
-                    }else{
+                    } else {
                         currentLat = location.latitude
                         currentLong = location.longitude
                     }
 
-                    if(currentLong != 0.0 && currentLat != 0.0 ){
+                    if (currentLong != 0.0 && currentLat != 0.0) {
                         compareTravelledDistance()
                     }
 
-                    if(shouldFreeCache){
+                    if (shouldFreeCache) {
                         freeCacheData()
                     }
                 }
@@ -207,9 +209,18 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                 android.Manifest.permission.ACCESS_COARSE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest,
+                locationCallback as LocationCallback, Looper.getMainLooper())
         }
     }
+
+    fun stopLocationUpdates(fusedLocationProviderClient: FusedLocationProviderClient) {
+        locationCallback?.let {
+            fusedLocationProviderClient.removeLocationUpdates(it)
+        }
+        locationCallback = null
+    }
+
 
     fun startPlacesLocationUpdates(
         fusedLocationProviderClient: FusedLocationProviderClient,
@@ -248,6 +259,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun loadPlacesAround(context: Context, location: Location, logType : String = "Places Api"){
         val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
 
@@ -301,6 +313,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun preparePlacesData(response: List<PlaceRequest>?) {
         if (!response.isNullOrEmpty()) {
             viewModelScope.launch {
@@ -443,6 +456,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun onSelectSearchListItem(context: Context, lat: String, long: String, itemName : String){
         val latDouble = lat.toDoubleOrNull() ?: 0.0
         val longDouble = long.toDoubleOrNull() ?: 0.0
@@ -490,6 +504,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         return location
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun onResetButtonClick(): LatLng {
 
         val currentLatLng: LatLng = if (currentLat != 0.0 && currentLong != 0.0) {
@@ -515,6 +530,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun updateClickedLatLng(latitude: Double, longitude: Double) {
         _clickedLatLng.value = Pair(latitude, longitude)
 
@@ -534,11 +550,11 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val heatMap = "HeatMap"
         _showHeatMap.value = !_showHeatMap.value
 
-//        val location = LatLng(currentLat, currentLong)
-//        getEventsData()
-//        getWeatherData(location)
-//        getTrafficData(location)
-//        getBaseData()
+        val location = LatLng(currentLat, currentLong)
+        getEventsData()
+        getWeatherData(location)
+        getTrafficData(location)
+        getBaseData()
     }
 
 
@@ -562,7 +578,9 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             result.onSuccess { responseBody ->
                 val eventsJson = responseBody.toString()
                 val gson = Gson()
-                eventsResponse = gson.fromJson(eventsJson, EventsRequest::class.java)
+                val type = object : TypeToken<List<EventsRequest>>() {}.type
+                eventsResponse = gson.fromJson(eventsJson, type)
+
 
                 Log.d("EventsApi", "Resultado da consulta de eventos é: ${result.toString()}")
             }.onFailure { exception ->

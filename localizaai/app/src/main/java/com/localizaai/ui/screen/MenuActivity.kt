@@ -359,6 +359,8 @@ fun MenuContent(
         mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
     }
 
+    
+
     var heatmapTileProvider by remember {
         mutableStateOf<HeatmapTileProvider?>(null)
     }

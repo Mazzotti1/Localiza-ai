@@ -43,7 +43,9 @@ import com.localizaai.Model.HistoryResponse
 import com.localizaai.Model.PlaceInfo
 import com.localizaai.Model.PlaceRequest
 import com.localizaai.Model.SpecificPlaceResponse
+import com.localizaai.Model.TrafficRequest
 import com.localizaai.Model.TrafficResponse
+import com.localizaai.Model.WeatherRequest
 import com.localizaai.Model.WeatherResponse
 import com.localizaai.data.repository.EventsRepository
 import com.localizaai.data.repository.HistoryRespository
@@ -684,11 +686,10 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun getHeatmapData(): List<LatLng?> {
-        val eventData = eventsResponse
-        val weatherData = weatherResponse
-        val trafficData = trafficResponse
-        val historyData = historyResponse
-        val timestampData = getActualTimestamp()
+
+        //definir um threshold dinamico talvez baseado em algo ou apenas alterar para faze mais sentido
+        val threshold = 0.5
+        val score = calculateLocalMovementScore()
 
         val fixedPoints = listOf(
             LatLng(previousLat, previousLong)
@@ -734,6 +735,51 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                 Log.d("HistoryApi", "Error: ${exception.message}")
             }
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun calculateLocalMovementScore(): Double {
+        val eventData = eventsResponse
+        val weatherData = weatherResponse
+        val trafficData = trafficResponse
+        val historyData = historyResponse
+        val timestampData = getActualTimestamp()
+
+        val eventScore = getEventScore(eventData)
+        val weatherScore = getWeatherScore(weatherData)
+        val trafficScore = getTrafficScore(trafficData)
+        val historyScore = getHistoryScore(historyData)
+
+        // dar um jeito de avaliar o tipo da categoria do local para definir pontos diferentes baseado no horário
+        // melhorar o weigthedScore para todas as variacoes
+        // melhorar o tipo de pontuacao
+        val placeType = specificPlaceList.map { place ->
+
+        }
+
+        val weightedScore =
+                (0.4 * eventScore) +
+                (0.2 * weatherScore) +
+                (0.3 * trafficScore) +
+                (0.1 * historyScore)
+
+        return weightedScore
+    }
+
+    private fun getEventScore(eventData:List<EventsRequest>): Double{
+        return 0.0
+    }
+
+    private fun getWeatherScore(weatherData:WeatherResponse?):Double{
+        return 0.0
+    }
+
+    private fun getTrafficScore(trafficData:TrafficResponse?):Double{
+        return 0.0
+    }
+
+    private fun getHistoryScore(historyData:HistoryResponse?):Double{
+        return 0.0
     }
 
 }

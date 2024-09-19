@@ -3,18 +3,17 @@ package com.localizaai.ui.ViewModel
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.health.connect.datatypes.ExerciseRoute
 import android.location.Geocoder
 import android.location.Location
 import android.os.Build
 import android.os.Looper
 import android.util.Log
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -27,12 +26,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.tasks.CancellationTokenSource
-import com.google.common.base.Objects
 import com.google.common.util.concurrent.RateLimiter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -43,9 +37,7 @@ import com.localizaai.Model.HistoryResponse
 import com.localizaai.Model.PlaceInfo
 import com.localizaai.Model.PlaceRequest
 import com.localizaai.Model.SpecificPlaceResponse
-import com.localizaai.Model.TrafficRequest
 import com.localizaai.Model.TrafficResponse
-import com.localizaai.Model.WeatherRequest
 import com.localizaai.Model.WeatherResponse
 import com.localizaai.data.repository.EventsRepository
 import com.localizaai.data.repository.HistoryRespository
@@ -60,9 +52,8 @@ import kotlinx.coroutines.launch
 
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.withContext
-import okhttp3.ResponseBody
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -128,6 +119,12 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var historyResponse by mutableStateOf<HistoryResponse?>(null)
 
     private var locationCallback: LocationCallback? = null
+
+    var maxEventScore = 0.4
+    var maxWeatherScore = 0.9
+    var maxTrafficScore = 0.4
+    var maxHistoryScore = 0.8
+
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -687,13 +684,17 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     @RequiresApi(Build.VERSION_CODES.O)
     fun getHeatmapData(): List<LatLng?> {
 
-        //definir um threshold dinamico talvez baseado em algo ou apenas alterar para faze mais sentido
-        val threshold = 0.5
-        val score = calculateLocalMovementScore()
-
         val fixedPoints = listOf(
             LatLng(previousLat, previousLong)
         )
+
+        val threshold = if (isPeakTime()) 0.7 else 0.5
+
+        //colocar a formação dos points dentro do forEach
+        specificPlaceList.forEach{place ->
+            val score = calculateLocalMovementScore(place)
+        }
+
 
         val dynamicPoints = specificPlaceList.map { place ->
             val latitude = place.geocodes?.main?.latitude ?: 0.0
@@ -738,30 +739,26 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun calculateLocalMovementScore(): Double {
+    private fun calculateLocalMovementScore(place: SpecificPlaceResponse): Double {
         val eventData = eventsResponse
         val weatherData = weatherResponse
         val trafficData = trafficResponse
         val historyData = historyResponse
-        val timestampData = getActualTimestamp()
 
-        val eventScore = getEventScore(eventData)
-        val weatherScore = getWeatherScore(weatherData)
-        val trafficScore = getTrafficScore(trafficData)
-        val historyScore = getHistoryScore(historyData)
+        val eventScore = normalizeScore(getEventScore(eventData), maxEventScore)
+        val weatherScore = normalizeScore(getWeatherScore(weatherData), maxWeatherScore)
+        val trafficScore = normalizeScore(getTrafficScore(trafficData), maxTrafficScore)
+        val historyScore = normalizeScore(getHistoryScore(historyData), maxHistoryScore)
 
-        // dar um jeito de avaliar o tipo da categoria do local para definir pontos diferentes baseado no horário
-        // melhorar o weigthedScore para todas as variacoes
-        // melhorar o tipo de pontuacao
-        val placeType = specificPlaceList.map { place ->
+        var weights = listOf(0.0, 0.0, 0.0, 0.0)
 
-        }
+        weights = getWeightsForPlaceType(place)
 
         val weightedScore =
-                (0.4 * eventScore) +
-                (0.2 * weatherScore) +
-                (0.3 * trafficScore) +
-                (0.1 * historyScore)
+            (weights[0] * eventScore) +
+            (weights[1] * weatherScore) +
+            (weights[2] * trafficScore) +
+            (weights[3] * historyScore)
 
         return weightedScore
     }
@@ -781,6 +778,32 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private fun getHistoryScore(historyData:HistoryResponse?):Double{
         return 0.0
     }
+
+    fun getWeightsForPlaceType(place: SpecificPlaceResponse): List<Double> {
+        var placeType = ""
+
+        place.categories.forEach { category ->
+            placeType = category.name
+        }
+        
+
+        return when (placeType) {
+            "restaurant" -> listOf(0.3, 0.2, 0.4, 0.1)
+            "park" -> listOf(0.2, 0.3, 0.3, 0.2)
+            else -> listOf(0.4, 0.2, 0.3, 0.1)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun isPeakTime(): Boolean {
+        val currentHour = LocalTime.now().hour
+        return currentHour in 11..13 || currentHour in 18..20
+    }
+
+    private fun normalizeScore(score: Double, maxScore: Double): Double {
+        return score / maxScore
+    }
+
 
 }
 

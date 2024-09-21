@@ -36,6 +36,7 @@ import com.localizaai.Model.HistoryRequest
 import com.localizaai.Model.HistoryResponse
 import com.localizaai.Model.PlaceInfo
 import com.localizaai.Model.PlaceRequest
+import com.localizaai.Model.ScoreCategoryResponse
 import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.Model.TrafficResponse
 import com.localizaai.Model.WeatherResponse
@@ -117,6 +118,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var trafficResponse by mutableStateOf<TrafficResponse?>(null)
     var eventsResponse by mutableStateOf<List<EventsRequest>>(emptyList())
     var historyResponse by mutableStateOf<HistoryResponse?>(null)
+    var scoreCategoryResponse by mutableStateOf<ScoreCategoryResponse?>(null)
 
     private var locationCallback: LocationCallback? = null
 
@@ -125,6 +127,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var maxTrafficScore = 0.4
     var maxHistoryScore = 0.8
 
+    var placeType = ""
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -750,15 +753,15 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val trafficScore = normalizeScore(getTrafficScore(trafficData), maxTrafficScore)
         val historyScore = normalizeScore(getHistoryScore(historyData), maxHistoryScore)
 
-        var weights = listOf(0.0, 0.0, 0.0, 0.0)
+        var weight = 0.0
+        weight = getWeightsForPlaceType(place)
 
-        weights = getWeightsForPlaceType(place)
-
-        val weightedScore =
-            (weights[0] * eventScore) +
-            (weights[1] * weatherScore) +
-            (weights[2] * trafficScore) +
-            (weights[3] * historyScore)
+        val weightedScore = (
+            (weight * eventScore) +
+            (weight * weatherScore) +
+            (weight * trafficScore) +
+            (weight * historyScore)
+        )
 
         return weightedScore
     }
@@ -779,18 +782,18 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         return 0.0
     }
 
-    fun getWeightsForPlaceType(place: SpecificPlaceResponse): List<Double> {
-        var placeType = ""
+    private fun getWeightsForPlaceType(place: SpecificPlaceResponse): Double {
 
         place.categories.forEach { category ->
             placeType = category.name
         }
-        
 
-        return when (placeType) {
-            "restaurant" -> listOf(0.3, 0.2, 0.4, 0.1)
-            "park" -> listOf(0.2, 0.3, 0.3, 0.2)
-            else -> listOf(0.4, 0.2, 0.3, 0.1)
+        getScoreByCategory()
+
+        if(scoreCategoryResponse!!.status){
+            return scoreCategoryResponse!!.data
+        }else {
+            return 0.0
         }
     }
 
@@ -804,6 +807,22 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         return score / maxScore
     }
 
+    private fun getScoreByCategory() {
+        viewModelScope.launch(Dispatchers.IO) {
+
+            val result = placesRepository.getCategoriesScore(placeType)
+
+            result.onSuccess { responseBody ->
+                val scoreJson = responseBody.toString()
+                val gson = Gson()
+                scoreCategoryResponse = gson.fromJson(scoreJson, ScoreCategoryResponse::class.java)
+
+                Log.d("PlaceApi", "Resultado da consulta de pontuação por categoria é: ${result.toString()}")
+            }.onFailure { exception ->
+                Log.d("PlaceApi", "Error: ${exception.message}")
+            }
+        }
+    }
 
 }
 

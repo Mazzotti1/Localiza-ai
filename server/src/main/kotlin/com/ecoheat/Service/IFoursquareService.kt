@@ -1,6 +1,7 @@
 package com.ecoheat.Service
 
 import com.ecoheat.Apis.Foursquare.FoursquarePlace
+import com.ecoheat.Model.ApiResponse
 
 interface IFoursquareService {
     fun getPlacesId(lat: String,long: String, radius: String, sort: String)
@@ -15,4 +16,10 @@ interface IFoursquareService {
 
     fun getAutocompletePlaces(search: String, lat: String, long: String)
     fun onAutocompletePlacesResponse(responseBody: String)
+
+    fun setCategories()
+
+    fun getScoreCategories(categoryType : String) : ApiResponse<Double>
+
+    fun onScoreCategoriesResponse(responseBody: String)
 }

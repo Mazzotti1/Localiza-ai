@@ -99,4 +99,31 @@ class FoursquareController (private val messageSource: MessageSource) {
             return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
         }
     }
+
+    @GetMapping("/setCategories")
+    fun setCategories(
+    ): ResponseEntity<Any>{
+       try {
+           foursquareService!!.setCategories()
+           val responseFromApi = foursquareService.getScoreCategoriesResponse()
+           return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
+       } catch(ex: RegistroIncorretoException){
+           val errorMessage = messageSource.getMessage("place.error.request", null, locale)
+           return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+       }
+    }
+    @GetMapping("/getScoreCategories")
+    fun getScoreCategories(
+        @RequestParam categoryType: String
+    ): ResponseEntity<Any> {
+        return try {
+            val responseFromApi = foursquareService!!.getScoreCategories(categoryType)
+            ResponseEntity(responseFromApi, HttpStatus.OK)
+        } catch (ex: RegistroIncorretoException) {
+            val errorMessage = messageSource.getMessage("place.error.request", null, locale)
+            ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+        }
+    }
+
+
 }   

@@ -105,4 +105,23 @@ class PlacesRepository(private val context: Context) {
             Result.failure(e)
         }
     }
+
+    suspend fun getCategoriesScore(placeType: String): Result<String> {
+        return try {
+            val response = withContext(Dispatchers.IO) {
+                apiService.getCategoriesScore(placeType)
+            }
+
+            if (response.isSuccessful) {
+                val responseBody = response.body()?.string()
+                Result.success(responseBody ?: "")
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Result.failure(Exception(errorBody ?: "Erro inesperado no Places by name"))
+            }
+        } catch (e: Exception) {
+            Log.d("Places", "Erro ao fazer a requisição: $e")
+            Result.failure(e)
+        }
+    }
 }

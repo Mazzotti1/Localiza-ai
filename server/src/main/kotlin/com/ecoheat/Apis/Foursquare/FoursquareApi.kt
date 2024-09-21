@@ -14,7 +14,7 @@ class FoursquareApi (private val messageSource: MessageSource?) {
     val locale = Locale("pt")
     val dotenv = dotenv()
     val apiKey = dotenv["FOURSQUARE_API_KEY"]!!
-
+    val apiCategoryKey = dotenv["FOURSQUARE_API_CATEGORY"]!!
     //sort can be = DISTANCE / RELEVANCE / RATING / POPULARITY
 
     private fun parseFoursquareResponse(jsonString: String): List<FoursquarePlace> {
@@ -170,6 +170,33 @@ class FoursquareApi (private val messageSource: MessageSource?) {
             }
         })
     }
+
+    fun getAllSubcategories(callback: IFoursquareService) {
+        val url = "https://api.foursquare.com/v2/venues/categories?v=20231010&oauth_token=$apiCategoryKey"
+
+        val request = Request.Builder()
+            .url(url)
+            .get()
+            .addHeader("accept", "application/json")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                val errorMessage = "Ocorreu um erro ao chamar API: ${e.message}\nPorquê: ${e.cause}"
+                callback.onPlacesFailure(messageSource!!.getMessage(errorMessage, null, locale))
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseBody = response.body?.string()
+                if (response.isSuccessful && responseBody != null) {
+                    callback.onScoreCategoriesResponse(responseBody)
+                } else {
+                    callback.onPlacesFailure(messageSource!!.getMessage("place.error.request", null, locale))
+                }
+            }
+        })
+    }
+
 }
 
 data class FoursquareResponse(val results: List<FoursquarePlace>)

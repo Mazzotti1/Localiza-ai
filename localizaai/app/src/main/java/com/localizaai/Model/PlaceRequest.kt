@@ -222,4 +222,9 @@ data class AutocompleteGeocodes (
     val drop_off: Coordinates?
 )
 
+data class ScoreCategoryResponse(
+    val status: Boolean,
+    val message: String,
+    val data: Double
+)
 

@@ -88,4 +88,8 @@ interface ApiService {
         @Query("radius") radius: String
     ): Response<ResponseBody>
 
+    @GET("/places/getScoreCategories")
+    suspend fun getCategoriesScore(
+        @Query("placeType") placeType : String
+    ) : Response<ResponseBody>
 }

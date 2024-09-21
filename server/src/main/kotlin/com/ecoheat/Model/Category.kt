@@ -21,6 +21,9 @@ data class Category (
     val thirdCategory: String,
 
     @Column(name="score", nullable = false)
-    val score: Double
+    val score: Double,
+
+    @Column(name="type", nullable = false)
+    val type: String
 )
 

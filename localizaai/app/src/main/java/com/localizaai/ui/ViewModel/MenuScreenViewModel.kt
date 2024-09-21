@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.RateLimiter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.localizaai.Model.Autocomplete
+import com.localizaai.Model.CategoryData
 import com.localizaai.Model.EventsRequest
 import com.localizaai.Model.HistoryRequest
 import com.localizaai.Model.HistoryResponse
@@ -53,15 +54,18 @@ import kotlinx.coroutines.launch
 
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -84,6 +88,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var specificPlaceResponse by mutableStateOf<SpecificPlaceResponse?>(null)
     var specificPlaceList = mutableStateListOf<SpecificPlaceResponse>()
     var infosPlaceResponse by mutableStateOf<PlaceInfo?>(null)
+    var infosPlaceResponseForCalculate by mutableStateOf<PlaceInfo?>(null)
     var autocompletePlaces = mutableStateOf<Autocomplete?>(null)
 
     val placeSemaphore = Semaphore(7)
@@ -121,11 +126,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var scoreCategoryResponse by mutableStateOf<ScoreCategoryResponse?>(null)
 
     private var locationCallback: LocationCallback? = null
-
-    var maxEventScore = 0.4
-    var maxWeatherScore = 0.9
-    var maxTrafficScore = 0.4
-    var maxHistoryScore = 0.8
+    var isHoliday = mutableStateOf(false)
 
     var placeType = ""
     fun loadThemeState(context: Context) {
@@ -583,7 +584,6 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                 val type = object : TypeToken<List<EventsRequest>>() {}.type
                 eventsResponse = gson.fromJson(eventsJson, type)
 
-
                 Log.d("EventsApi", "Resultado da consulta de eventos é: ${result.toString()}")
             }.onFailure { exception ->
                 Log.d("EventsApi", "Error: ${exception.message}")
@@ -743,36 +743,222 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun calculateLocalMovementScore(place: SpecificPlaceResponse): Double {
-        val eventData = eventsResponse
+        val holidayData = eventsResponse
         val weatherData = weatherResponse
         val trafficData = trafficResponse
         val historyData = historyResponse
 
-        val eventScore = normalizeScore(getEventScore(eventData), maxEventScore)
-        val weatherScore = normalizeScore(getWeatherScore(weatherData), maxWeatherScore)
-        val trafficScore = normalizeScore(getTrafficScore(trafficData), maxTrafficScore)
-        val historyScore = normalizeScore(getHistoryScore(historyData), maxHistoryScore)
+        val rawHolidayScore = getHolidayScore(holidayData)
+        val rawWeatherScore = getWeatherScore(weatherData)
+        val rawTrafficScore = getTrafficScore(trafficData)
+        val rawHistoryScore = getHistoryScore(historyData)
 
-        var weight = 0.0
-        weight = getWeightsForPlaceType(place)
+        val rawScores = listOf(rawHolidayScore, rawWeatherScore, rawTrafficScore, rawHistoryScore)
+        val normalizedScores = normalizeScores(rawScores)
+
+        val placeCategoriesResult = getWeightsForPlaceType(place)
+        val placeWeight = placeCategoriesResult.score
+        checkIsHoliday(eventsResponse)
+
+        var placeImpact = getPlaceScore(place)
+        var weatherImpact = normalizedScores[1]
+        var holidayImpact = normalizedScores[0]
+        var trafficImpact = normalizedScores[2]
+        val historyImpact = normalizedScores[3]
+
+        if(placeCategoriesResult.type == "OUTDOOR"){
+            if (normalizedScores[1] < 0.5) {
+                weatherImpact *= 0.5
+            }
+
+            weatherData!!.forecast.forecastday.forEach { weather ->
+                weather.hour.forEach { hour ->
+                    if (hour.is_day == 1) {
+                        if (hour.condition.text.contains("Céu limpo", ignoreCase = true)) {
+                            weatherImpact *= 1.2
+                        } else {
+                            weatherImpact *= 0.6
+                        }
+                    } else {
+                        if (hour.condition.text.contains("Céu limpo", ignoreCase = true)) {
+                            weatherImpact *= 1.1
+                        } else {
+                            weatherImpact *= 0.5
+                        }
+                    }
+                }
+            }
+
+        } else if (placeCategoriesResult.type == "INDOOR"){
+            if (normalizedScores[1] < 0.5) {
+                placeImpact *= 1.2
+            }
+
+            weatherData!!.forecast.forecastday.forEach { weather ->
+                weather.hour.forEach { hour ->
+                    if (hour.is_day == 1) {
+                        if (hour.condition.text.contains("Céu limpo", ignoreCase = true)) {
+                            weatherImpact *= 1.2
+                        } else {
+                            weatherImpact *= 0.8
+                        }
+                    } else {
+                        if (hour.condition.text.contains("Céu limpo", ignoreCase = true)) {
+                            weatherImpact *= 1.1
+                        } else {
+                            weatherImpact *= 0.9
+                        }
+                    }
+                }
+            }
+        }
+
+        if (normalizedScores[1] < 0.5) {
+            holidayImpact *= 0.7
+        }
+
+        if(isHoliday.value){
+            if (normalizedScores[2] > 0.5) {
+                trafficImpact *= 1.1
+            }
+        }
+
+        //Usar o history impact pra tentar criar um modelo preditivo de machine learning la no backend
 
         val weightedScore = (
-            (weight * eventScore) +
-            (weight * weatherScore) +
-            (weight * trafficScore) +
-            (weight * historyScore)
+            (placeWeight * placeImpact) *
+            (placeWeight * holidayImpact) *
+            (placeWeight * weatherImpact) *
+            (placeWeight * trafficImpact) *
+            (placeWeight * historyImpact)
         )
 
         return weightedScore
     }
 
-    private fun getEventScore(eventData:List<EventsRequest>): Double{
-        return 0.0
+    private fun getPlaceScore(place: SpecificPlaceResponse): Double {
+        var placeScore: Double = 0.0
+
+        try {
+            getAllPlaceInfoForCalculate(place.name, place.geocodes!!.main!!.latitude.toString(), place.geocodes!!.main!!.longitude.toString())
+
+            val popularity = infosPlaceResponseForCalculate!!.place!!.popularity
+            when {
+                popularity < 0.3 -> placeScore -= 0.4  // Baixíssima popularidade
+                popularity < 0.5 -> placeScore -= 0.2  // Popularidade moderada
+                popularity < 0.7 -> placeScore += 0.1  // Popularidade razoável
+                else -> placeScore += 0.4
+            }
+
+            val rating = infosPlaceResponseForCalculate!!.place!!.rating
+            when {
+                rating < 5.0 -> placeScore -= 0.5  // Rating muito baixo
+                rating < 6.5 -> placeScore -= 0.2  // Rating baixo
+                rating < 8.0 -> placeScore += 0.3  // Rating médio-alto
+                else -> placeScore += 0.5
+            }
+
+            val verified = infosPlaceResponseForCalculate!!.place!!.verified
+            placeScore += if (verified == true) 0.2 else -0.1
+
+            val matchScore = infosPlaceResponseForCalculate!!.match_score
+            when {
+                matchScore < 0.4 -> placeScore -= 0.4  // Baixa correspondência
+                matchScore < 0.7 -> placeScore -= 0.1  // Moderada
+                matchScore < 0.9 -> placeScore += 0.2  // Boa
+                else -> placeScore += 0.5
+            }
+
+            when (place.closed_bucket) {
+                "VeryLikelyOpen" -> {
+                    placeScore += 0.5
+                }
+                "VeryLikelyClosed" -> {
+                    placeScore -= 0.5
+                }
+                "LikelyOpen" -> {
+                    placeScore += 0.3
+                }
+                "LikelyClosed" -> {
+                    placeScore -= 0.3
+                }
+            }
+
+        } catch (e: Throwable) {
+        }
+
+        return placeScore
     }
 
-    private fun getWeatherScore(weatherData:WeatherResponse?):Double{
-        return 0.0
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun getHolidayScore(eventData: List<EventsRequest>): Double {
+        var score: Double = 0.0
+        try {
+            val currentDate = LocalDate.now()
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+            eventData.forEach { data ->
+                val eventDate = LocalDate.parse(data.second, formatter)
+                val daysDifference = ChronoUnit.DAYS.between(currentDate, eventDate).toInt()
+
+                when {
+                    daysDifference == 0 -> {
+                        score = 1.0
+                    }
+                    daysDifference in 1..7 -> {
+                        score = 0.5
+                    }
+                    daysDifference > 7 -> {
+                        score = 0.2
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+        }
+        return score
     }
+
+
+    private fun getWeatherScore(weatherData: WeatherResponse?): Double {
+        var score: Double = 0.0
+
+        try {
+            // Temperatura
+            val currentTemp = weatherData?.current?.temp_c ?: 0.0
+            when {
+                currentTemp < 15 -> score -= 0.5 // Muito frio
+                currentTemp in 15.0..19.9 -> score += 0.2 // Frio
+                currentTemp in 20.0..25.0 -> score += 1.0 // Confortável
+                currentTemp in 25.1..30.0 -> score += 0.5 // Quente
+                currentTemp > 30 -> score -= 0.5 // Muito quente
+            }
+
+            // Umidade
+            val humidity = weatherData?.current?.humidity ?: 0
+            if (humidity > 80) {
+                score -= 0.3 // Alta umidade
+            }
+
+            // Condições climáticas
+            val conditionText = weatherData?.current?.condition?.text ?: ""
+            when {
+                conditionText.contains("Céu limpo", ignoreCase = true) -> score += 1.0
+                conditionText.contains("parcialmente nublado", ignoreCase = true) -> score += 0.5
+                conditionText.contains("possibilidade de chuva", ignoreCase = true) -> score -= 0.5
+                conditionText.contains("chuva", ignoreCase = true) -> score -= 1.0
+            }
+
+            // Previsão de chuva
+            val dailyChanceOfRain = weatherData?.forecast?.forecastday?.firstOrNull()?.day?.daily_chance_of_rain ?: 0
+            if (dailyChanceOfRain > 50) {
+                score -= 0.5
+            }
+
+        } catch (e: Throwable) {
+        }
+        return score
+    }
+
 
     private fun getTrafficScore(trafficData:TrafficResponse?):Double{
         return 0.0
@@ -782,7 +968,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         return 0.0
     }
 
-    private fun getWeightsForPlaceType(place: SpecificPlaceResponse): Double {
+    private fun getWeightsForPlaceType(place: SpecificPlaceResponse): CategoryData {
 
         place.categories.forEach { category ->
             placeType = category.name
@@ -793,7 +979,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         if(scoreCategoryResponse!!.status){
             return scoreCategoryResponse!!.data
         }else {
-            return 0.0
+            return CategoryData(0.0, "default")
         }
     }
 
@@ -803,8 +989,28 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         return currentHour in 11..13 || currentHour in 18..20
     }
 
-    private fun normalizeScore(score: Double, maxScore: Double): Double {
-        return score / maxScore
+    // media dos valores
+    fun calculateMean(values: List<Double>): Double {
+        return values.sum() / values.size
+    }
+
+    //desvio padrao
+    fun calculateStandardDeviation(values: List<Double>, mean: Double): Double {
+        val variance = values.map { (it - mean).pow(2) }.sum() / values.size
+        return sqrt(variance)
+    }
+
+    // normalização Z
+    fun normalizeZScore(value: Double, mean: Double, standardDeviation: Double): Double {
+        return (value - mean) / standardDeviation
+    }
+
+    //normalizar um conjunto de dados
+    fun normalizeScores(scores: List<Double>): List<Double> {
+        val mean = calculateMean(scores)
+        val stdDev = calculateStandardDeviation(scores, mean)
+
+        return scores.map { normalizeZScore(it, mean, stdDev) }
     }
 
     private fun getScoreByCategory() {
@@ -824,6 +1030,43 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
+    fun getAllPlaceInfoForCalculate(name : String, lat: String, long : String){
+        try {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = placesRepository.fetchPlaceByNameData(lat,long,name)
+
+                result.onSuccess { responseBody ->
+
+                    val infosPlaceJson = responseBody.toString()
+                    val gson = Gson()
+                    val parsedResponse = gson.fromJson(infosPlaceJson, PlaceInfo::class.java)
+
+                    infosPlaceResponseForCalculate = parsedResponse
+                    Log.d("PlacesApi", "Resultado da consulta das informações do lugar para calculo: $infosPlaceResponseForCalculate")
+                }.onFailure { exception ->
+                    Log.d("PlacesApi", "Error: ${exception.message}")
+                }
+            }
+        }catch(e: Throwable){
+            Log.d("PlacesApi", "Error: ${e}")
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun checkIsHoliday(events: List<EventsRequest>){
+        try {
+            val currentDate = LocalDate.now()
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            events.forEach { event ->
+                if(currentDate.format(formatter) == event.second){
+                    isHoliday.value = true
+                }else {
+                    isHoliday.value = false
+                }
+            }
+        }catch(e:Throwable){
+        }
+    }
 }
 
 

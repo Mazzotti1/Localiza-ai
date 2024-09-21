@@ -225,6 +225,11 @@ data class AutocompleteGeocodes (
 data class ScoreCategoryResponse(
     val status: Boolean,
     val message: String,
-    val data: Double
+    val data: CategoryData
+)
+
+data class CategoryData(
+    val score: Double,
+    val type: String
 )
 

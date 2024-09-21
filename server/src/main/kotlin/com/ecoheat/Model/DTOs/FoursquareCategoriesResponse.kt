@@ -16,3 +16,8 @@ data class Subcategory(
     val name: String,
     val categories: List<Subcategory>
 )
+
+data class ScoreTypeResponse(
+    val score: Double,
+    val type: String
+)

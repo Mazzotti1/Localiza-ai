@@ -6,6 +6,7 @@ import com.ecoheat.Exception.RegistroIncorretoException
 import com.ecoheat.Model.ApiResponse
 import com.ecoheat.Model.Category
 import com.ecoheat.Model.DTOs.FoursquareCategoriesResponse
+import com.ecoheat.Model.DTOs.ScoreTypeResponse
 import com.ecoheat.Model.DTOs.Subcategory
 import com.ecoheat.Model.History
 import com.ecoheat.Repository.FoursquareRepository
@@ -104,18 +105,18 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
         }
     }
 
-    override fun getScoreCategories(categoryType: String): ApiResponse<Double> {
+    override fun getScoreCategories(categoryType: String): ApiResponse<ScoreTypeResponse> {
         return try {
             if (categoryType.isEmpty()) {
                 return ApiResponse(status = false, message = "Tipo de categoria não pode ser vazio", data = null)
             }
 
-            val score = repository.getScoreByCategory(categoryType) ?: 0.0
+            val scoreData = repository.getScoreByCategory(categoryType)
 
-            if (score != 0.0) {
-                ApiResponse(status = true, message = "Pontuação obtida com sucesso", data = score)
+            if (scoreData.score != 0.0) {
+                ApiResponse(status = true, message = "Pontuação obtida com sucesso", data = scoreData)
             } else {
-                ApiResponse(status = false, message = "Nenhuma pontuação foi encontrada", data = score)
+                ApiResponse(status = false, message = "Nenhuma pontuação foi encontrada", data = scoreData)
             }
 
         } catch (ex: RegistroIncorretoException) {

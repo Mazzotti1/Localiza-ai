@@ -2,6 +2,7 @@ package com.ecoheat.Service
 
 import com.ecoheat.Apis.Foursquare.FoursquarePlace
 import com.ecoheat.Model.ApiResponse
+import com.ecoheat.Model.DTOs.ScoreTypeResponse
 
 interface IFoursquareService {
     fun getPlacesId(lat: String,long: String, radius: String, sort: String)
@@ -19,7 +20,7 @@ interface IFoursquareService {
 
     fun setCategories()
 
-    fun getScoreCategories(categoryType : String) : ApiResponse<Double>
+    fun getScoreCategories(categoryType : String) : ApiResponse<ScoreTypeResponse>
 
     fun onScoreCategoriesResponse(responseBody: String)
 }

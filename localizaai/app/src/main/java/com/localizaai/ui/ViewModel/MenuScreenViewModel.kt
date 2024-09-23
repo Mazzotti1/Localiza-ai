@@ -766,6 +766,14 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         var trafficImpact = normalizedScores[2]
         val historyImpact = normalizedScores[3]
 
+        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+        val language = sharedPreferences.getString("language", "")
+        var conditionText = when (language){
+            "en" -> "Clear"
+            "pt" -> "Céu limpo"
+            else -> ""
+        }
+
         if(placeCategoriesResult.type == "OUTDOOR"){
             if (normalizedScores[1] < 0.5) {
                 weatherImpact *= 0.5
@@ -774,13 +782,13 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             weatherData!!.forecast.forecastday.forEach { weather ->
                 weather.hour.forEach { hour ->
                     if (hour.is_day == 1) {
-                        if (hour.condition.text.contains("Céu limpo", ignoreCase = true)) {
+                        if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
                             weatherImpact *= 1.2
                         } else {
                             weatherImpact *= 0.6
                         }
                     } else {
-                        if (hour.condition.text.contains("Céu limpo", ignoreCase = true)) {
+                        if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
                             weatherImpact *= 1.1
                         } else {
                             weatherImpact *= 0.5
@@ -797,13 +805,13 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             weatherData!!.forecast.forecastday.forEach { weather ->
                 weather.hour.forEach { hour ->
                     if (hour.is_day == 1) {
-                        if (hour.condition.text.contains("Céu limpo", ignoreCase = true)) {
+                        if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
                             weatherImpact *= 1.2
                         } else {
                             weatherImpact *= 0.8
                         }
                     } else {
-                        if (hour.condition.text.contains("Céu limpo", ignoreCase = true)) {
+                        if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
                             weatherImpact *= 1.1
                         } else {
                             weatherImpact *= 0.9
@@ -921,6 +929,16 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     private fun getWeatherScore(weatherData: WeatherResponse?): Double {
         var score: Double = 0.0
+        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+        val language = sharedPreferences.getString("language", "")
+        val conditionsPt = listOf("Céu limpo", "parcialmente nublado", "possibilidade de chuva", "chuva")
+        val conditionsEn = listOf("Clear", "Partly cloudy", "Chance of rain", "Rain")
+
+        var condition = when (language){
+            "en" -> conditionsEn
+            "pt" -> conditionsPt
+            else -> listOf("")
+        }
 
         try {
             // Temperatura
@@ -942,10 +960,10 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             // Condições climáticas
             val conditionText = weatherData?.current?.condition?.text ?: ""
             when {
-                conditionText.contains("Céu limpo", ignoreCase = true) -> score += 1.0
-                conditionText.contains("parcialmente nublado", ignoreCase = true) -> score += 0.5
-                conditionText.contains("possibilidade de chuva", ignoreCase = true) -> score -= 0.5
-                conditionText.contains("chuva", ignoreCase = true) -> score -= 1.0
+                conditionText.contains(condition[0], ignoreCase = true) -> score += 1.0
+                conditionText.contains(condition[1], ignoreCase = true) -> score += 0.5
+                conditionText.contains(condition[2], ignoreCase = true) -> score -= 0.5
+                conditionText.contains(condition[3], ignoreCase = true) -> score -= 1.0
             }
 
             // Previsão de chuva
@@ -960,9 +978,55 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     }
 
 
-    private fun getTrafficScore(trafficData:TrafficResponse?):Double{
-        return 0.0
+    private fun getTrafficScore(trafficData: TrafficResponse?): Double {
+        var score: Double = 0.0
+        try {
+            // Velocidade Atual vs. Velocidade de Fluxo Livre
+            val currentSpeed = trafficData?.currentSpeed ?: 0
+            val freeFlowSpeed = trafficData?.freeFlowSpeed ?: 0
+            if (currentSpeed > 0 && freeFlowSpeed > 0) {
+                val speedRatio = currentSpeed.toDouble() / freeFlowSpeed.toDouble()
+                when {
+                    speedRatio >= 0.9 -> score += 1.0 // Tráfego fluindo bem (velocidade próxima à ideal)
+                    speedRatio in 0.7..0.89 -> score += 0.5 // Tráfego moderado
+                    speedRatio in 0.5..0.69 -> score -= 0.5 // Tráfego pesado
+                    speedRatio < 0.5 -> score -= 1.0 // Tráfego muito intenso
+                }
+            }
+
+            // Tempo de Viagem Atual vs. Tempo de Fluxo Livre
+            val currentTravelTime = trafficData?.currentTravelTime ?: 0
+            val freeFlowTravelTime = trafficData?.freeFlowTravelTime ?: 0
+            if (currentTravelTime > 0 && freeFlowTravelTime > 0) {
+                val travelTimeRatio = currentTravelTime.toDouble() / freeFlowTravelTime.toDouble()
+                when {
+                    travelTimeRatio <= 1.1 -> score += 1.0 // Tempo de viagem normal
+                    travelTimeRatio in 1.1..1.3 -> score += 0.5 // Pequeno atraso
+                    travelTimeRatio in 1.3..1.5 -> score -= 0.5 // Atraso moderado
+                    travelTimeRatio > 1.5 -> score -= 1.0 // Atraso significativo
+                }
+            }
+
+            // Nível de Confiança
+            val confidence: Double = trafficData?.confidence ?: 1.0
+            when {
+                confidence >= 0.9 -> score += 0.5
+                confidence >= 0.7 && confidence < 0.9 -> score += 0.2
+                confidence < 0.7 -> score -= 0.5
+            }
+
+            // Fechamento de Estrada
+            val roadClosure = trafficData?.roadClosure ?: false
+            if (roadClosure) {
+                score -= 2.0
+            }
+
+        } catch (e: Throwable) {
+        }
+
+        return score
     }
+
 
     private fun getHistoryScore(historyData:HistoryResponse?):Double{
         return 0.0

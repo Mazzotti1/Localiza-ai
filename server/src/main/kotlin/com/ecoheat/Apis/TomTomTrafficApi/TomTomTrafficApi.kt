@@ -61,6 +61,6 @@ data class FlowSegmentData(
     val freeFlowSpeed:Int,
     val currentTravelTime:Int,
     val freeFlowTravelTime:Int,
-    val confidence: Int,
+    val confidence: Double,
     val roadClosure:Boolean
 )

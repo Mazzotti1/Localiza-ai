@@ -1,5 +1,7 @@
 package com.ecoheat.Model.DTOs
 
+import com.ecoheat.Model.Traffic
+import com.ecoheat.Model.Weather
 import java.sql.Timestamp
 
 data class HistoryRequest(
@@ -10,5 +12,7 @@ data class HistoryRequest(
     val timestamp: Timestamp,
     val category: String,
     val type: String?,
-    val updatedBy:Long
+    val updatedBy:Long,
+    val weather: Weather,
+    val traffic:Traffic
 )

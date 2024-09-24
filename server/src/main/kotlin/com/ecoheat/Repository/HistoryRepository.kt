@@ -49,3 +49,9 @@ interface PlaceRepository : JpaRepository<Place, Long> {
     fun findPlaceByName(@Param("name") name: String) : Int
 }
 
+interface WeatherRepository : JpaRepository<Weather, Long> {
+}
+
+interface TrafficRepository : JpaRepository<Traffic, Long> {
+}
+

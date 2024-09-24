@@ -6,9 +6,7 @@ import com.ecoheat.Service.IWeatherService
 import com.ecoheat.Apis.WeatherApi.WeatherApi
 import com.ecoheat.Model.*
 import com.ecoheat.Model.DTOs.HistoryRequest
-import com.ecoheat.Repository.EventRepository
-import com.ecoheat.Repository.HistoryRepository
-import com.ecoheat.Repository.PlaceRepository
+import com.ecoheat.Repository.*
 import com.ecoheat.Service.IHistoryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.parsing.Location
@@ -24,7 +22,9 @@ constructor(
     private val messageSource: MessageSource,
     private val historyRepository: HistoryRepository,
     private val eventRepository: EventRepository,
-    private val placeRepository: PlaceRepository
+    private val placeRepository: PlaceRepository,
+    private val weatherRepository: WeatherRepository,
+    private val trafficRepository: TrafficRepository
 ): IHistoryService {
 
     val locale = Locale("pt")
@@ -104,7 +104,13 @@ constructor(
             val newEvent = Event(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.timestamp ,parameters.category ,parameters.updatedBy, true)
             val result = eventRepository.save(newEvent)
 
-            setHistory(result.eventId, result.eventTimestamp, parameters.type,parameters.latitude,parameters.longitude, parameters.updatedBy)
+            val weather = parameters.weather
+            val weatherResult = weatherRepository.save(weather)
+
+            val traffic = parameters.traffic
+            val trafficResult = trafficRepository.save(traffic)
+
+            setHistory(result.eventId, result.eventTimestamp, parameters.type,parameters.latitude,parameters.longitude, parameters.updatedBy, weatherResult.weatherId!!, trafficResult.trafficId!!)
 
         } catch (ex: IllegalArgumentException) {
             ApiResponse(status = false, message = ex.message ?: "Erro de parâmetro", data = null)
@@ -131,7 +137,13 @@ constructor(
             val newPlace = Place(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.timestamp,parameters.category , parameters.updatedBy, true)
             val result = placeRepository.save(newPlace)
 
-            setHistory(result.placeId, result.placeTimestamp, parameters.type,parameters.latitude,parameters.longitude, parameters.updatedBy)
+            val weather = parameters.weather
+            val weatherResult = weatherRepository.save(weather)
+
+            val traffic = parameters.traffic
+            val trafficResult = trafficRepository.save(traffic)
+
+            setHistory(result.placeId, result.placeTimestamp, parameters.type,parameters.latitude,parameters.longitude, parameters.updatedBy, weatherResult.weatherId!!, trafficResult.trafficId!!)
 
         } catch (ex: IllegalArgumentException) {
             ApiResponse(status = false, message = ex.message ?: "Erro de parâmetro", data = null)
@@ -140,7 +152,7 @@ constructor(
             ApiResponse(status = false, message = errorMessage, data = null)
         }
     }
-    fun setHistory(id: Long?, timestamp: Timestamp?, type: String?,latitude : Double, longitude: Double, updatedBy : Long): ApiResponse<Any> {
+    fun setHistory(id: Long?, timestamp: Timestamp?, type: String?,latitude : Double, longitude: Double, updatedBy : Long,weatherId : Long, trafficId: Long): ApiResponse<Any> {
         return try {
             val historyLog = when (type) {
                 "event" -> "evento"
@@ -148,7 +160,7 @@ constructor(
                 else -> throw IllegalArgumentException("Tipo inválido: $type")
             }
 
-            val newHistory = History(null, timestamp!!, id!!,type, latitude,longitude ,updatedBy, true)
+            val newHistory = History(null, timestamp!!, id!!,type, latitude,longitude ,updatedBy, true, weatherId, trafficId)
             historyRepository.save(newHistory)
 
             ApiResponse(status = true, message = "$historyLog criado com sucesso", data = newHistory)

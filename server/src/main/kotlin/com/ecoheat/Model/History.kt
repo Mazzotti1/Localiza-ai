@@ -32,7 +32,11 @@ data class History (
     var updatedBy:Long,
 
     @Column(name = "is_active", nullable = false)
-    var isActive: Boolean
+    var isActive: Boolean,
 
+    @Column(name = "weather_id", nullable = false)
+    var weatherId: Long,
 
+    @Column(name = "traffic_id", nullable = false)
+    var trafficId: Long
 )

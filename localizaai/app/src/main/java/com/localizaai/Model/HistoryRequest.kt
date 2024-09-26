@@ -3,20 +3,22 @@ package com.localizaai.Model
 import java.sql.Timestamp
 
 data class HistoryRequest(
-    val name: String?,
-    val description: String?,
-    val latitude: Double,
+    val historyTimestamp: String,
+    val name : String,
+    val description : String,
+    val entityType: String,
+    val latitude : Double,
     val longitude: Double,
-    val timestamp: String,
     val category: String,
-    val type: String?,
-    val updatedBy:Long
+    val updatedBy : Long,
+    val weather: Weather,
+    val traffic:Traffic
 )
 
 data class HistoryResponse(
     val status: Boolean,
     val message: String,
-    val data: List<History>
+    val data: History
 )
 
 data class History(
@@ -27,5 +29,23 @@ data class History(
     val latitude : Double,
     val longitude: Double,
     val updatedBy : Long,
-    val isActive : Boolean
+    val isActive : Boolean,
+    val weather: Weather,
+    val traffic:Traffic
+)
+
+data class Weather(
+    val condition : String,
+    val temperature : Double,
+    val humidity : Int,
+    val rainChance : Int
+)
+
+data class Traffic(
+    val currentSpeed : Int,
+    val freeFlowSpeed : Int,
+    val currentTravelTime : Int,
+    val freeFlowTravelTime : Int,
+    val confidence : Double,
+    val roadClosure : Boolean,
 )

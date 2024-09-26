@@ -14,7 +14,7 @@ data class History (
     val historyId: Long? = null,
 
     @Column(name="history_timestamp",nullable = false)
-    val historyTimestamp: Timestamp,
+    val historyTimestamp: String,
 
     @Column(name = "entity_id", nullable = false)
     val entityId: Long,

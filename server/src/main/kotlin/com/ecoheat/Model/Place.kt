@@ -25,7 +25,7 @@ data class Place (
     var longitude:Double,
 
     @Column(name="place_timestamp",nullable = false)
-    val placeTimestamp: Timestamp,
+    val placeTimestamp: String,
 
     @JoinColumn(name = "category")
     val placeCategory: String,

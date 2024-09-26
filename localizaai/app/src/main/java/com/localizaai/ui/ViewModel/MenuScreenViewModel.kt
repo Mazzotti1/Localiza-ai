@@ -39,7 +39,9 @@ import com.localizaai.Model.PlaceInfo
 import com.localizaai.Model.PlaceRequest
 import com.localizaai.Model.ScoreCategoryResponse
 import com.localizaai.Model.SpecificPlaceResponse
+import com.localizaai.Model.Traffic
 import com.localizaai.Model.TrafficResponse
+import com.localizaai.Model.Weather
 import com.localizaai.Model.WeatherResponse
 import com.localizaai.data.repository.EventsRepository
 import com.localizaai.data.repository.HistoryRespository
@@ -593,7 +595,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     fun getWeatherData (location : LatLng){
         val cityName = getCityNameFromLocation(context, location ).toString()
-        val days = 3
+        val days = 1
         val calendar = Calendar.getInstance()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val lang = language
@@ -715,15 +717,53 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val category: String = categories.joinToString("/ ")
         val currentTimestamp = OffsetDateTime.now().toString()
 
+        val trafficData = if (trafficResponse != null) {
+            Traffic(
+                currentSpeed = trafficResponse!!.currentSpeed ?: 0,
+                freeFlowSpeed = trafficResponse!!.freeFlowSpeed ?: 0,
+                currentTravelTime = trafficResponse!!.currentTravelTime ?: 0,
+                freeFlowTravelTime = trafficResponse!!.freeFlowTravelTime ?: 0,
+                confidence = trafficResponse!!.confidence ?: 0.0,
+                roadClosure = trafficResponse!!.roadClosure ?: false
+            )
+        } else {
+            Traffic(
+                currentSpeed = 0,
+                freeFlowSpeed = 0,
+                currentTravelTime = 0,
+                freeFlowTravelTime = 0,
+                confidence = 0.0,
+                roadClosure = false
+            )
+        }
+
+        val weatherData = if (weatherResponse != null) {
+            Weather(
+                condition = weatherResponse!!.current.condition.text ?: "Unknown",
+                temperature = weatherResponse!!.current.temp_c ?: 0.0,
+                humidity = weatherResponse!!.current.humidity ?: 0,
+                rainChance = weatherResponse!!.forecast.forecastday.getOrNull(0)?.hour?.getOrNull(0)?.chance_of_rain ?: 0
+            )
+        } else {
+            Weather(
+                condition = "Unknown",
+                temperature = 0.0,
+                humidity = 0,
+                rainChance = 0
+            )
+        }
+
         val historyRequest = HistoryRequest(
+            historyTimestamp = currentTimestamp,
             name = parsedResponse.name,
             description = parsedResponse.closed_bucket,
+            entityType = "place",
             latitude = parsedResponse.geocodes?.main?.latitude ?: 0.0,
             longitude = parsedResponse.geocodes?.main?.longitude ?: 0.0,
-            timestamp = currentTimestamp,
             category = category,
-            type = "place",
-            updatedBy = userId.toLong()
+            updatedBy = userId.toLong(),
+            weather = weatherData,
+            traffic = trafficData
         )
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -834,12 +874,12 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         //Usar o history impact pra tentar criar um modelo preditivo de machine learning la no backend
 
         val weightedScore = (
-            (placeWeight * placeImpact) *
-            (placeWeight * holidayImpact) *
-            (placeWeight * weatherImpact) *
-            (placeWeight * trafficImpact) *
-            (placeWeight * historyImpact)
-        )
+                (placeWeight * placeImpact) *
+                        (placeWeight * holidayImpact) *
+                        (placeWeight * weatherImpact) *
+                        (placeWeight * trafficImpact) *
+                        (placeWeight * historyImpact)
+                )
 
         return weightedScore
     }

@@ -176,8 +176,11 @@ private fun prepareDataForApi(
 ) {
     viewModel.startPlacesLocationUpdates(fusedLocationProviderClient, context) { location ->
         viewModel.loadPlacesAround(context, location)
-    }
 
+        val latLng = LatLng(location.latitude, location.longitude)
+        viewModel.getWeatherData(latLng)
+        viewModel.getTrafficData(latLng)
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)

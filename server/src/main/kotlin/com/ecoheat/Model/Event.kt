@@ -25,7 +25,7 @@ data class Event (
     var longitude:Double,
 
     @Column(name="event_timestamp",nullable = false)
-    val eventTimestamp: Timestamp,
+    val eventTimestamp: String,
 
     @JoinColumn(name = "category")
     val eventCategory: String,

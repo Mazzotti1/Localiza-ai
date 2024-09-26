@@ -60,7 +60,7 @@ class HistoryController(private val messageSource: MessageSource) {
         @RequestBody parameters: HistoryRequest
     ) : ResponseEntity<Any>{
         try {
-            val responseFromApi = when(parameters.type) {
+            val responseFromApi = when(parameters.entityType) {
                 "place" -> historyService!!.setPlace(parameters)
                 "event" -> historyService!!.setEvent(parameters)
                 else -> throw IllegalArgumentException("Tipo inválido: $parameters.type")

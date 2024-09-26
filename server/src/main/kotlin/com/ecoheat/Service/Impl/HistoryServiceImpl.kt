@@ -92,16 +92,17 @@ constructor(
     ): ApiResponse<Any> {
         return try {
 
-            var isDuplicatedEvent = parameters.name?.let { eventRepository.findEventByName(it) }
-            if(isDuplicatedEvent != 0){
+            var isDuplicatedPlace = parameters.name?.let { eventRepository.findEventByName(it) }
+
+            if(isDuplicatedPlace != 0){
                 return ApiResponse(status = false, message = "Lugar já existe", data = null)
             }
 
-            if (parameters.name.isNullOrBlank() || parameters.description.isNullOrBlank() ) {
+            if (parameters.name.isNullOrBlank()  || parameters.description.isNullOrBlank() ) {
                 throw IllegalArgumentException("Parâmetros obrigatórios não podem ser nulos ou vazios")
             }
 
-            val newEvent = Event(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.timestamp ,parameters.category ,parameters.updatedBy, true)
+            val newEvent = Event(null, parameters.name, parameters.description,parameters.latitude,parameters.longitude ,parameters.historyTimestamp, parameters.category, parameters.updatedBy, true)
             val result = eventRepository.save(newEvent)
 
             val weather = parameters.weather
@@ -110,7 +111,7 @@ constructor(
             val traffic = parameters.traffic
             val trafficResult = trafficRepository.save(traffic)
 
-            setHistory(result.eventId, result.eventTimestamp, parameters.type,parameters.latitude,parameters.longitude, parameters.updatedBy, weatherResult.weatherId!!, trafficResult.trafficId!!)
+            setHistory(result.eventId, result.eventTimestamp, parameters.entityType,parameters.latitude,parameters.longitude, parameters.updatedBy, weatherResult.weatherId!!, trafficResult.trafficId!!)
 
         } catch (ex: IllegalArgumentException) {
             ApiResponse(status = false, message = ex.message ?: "Erro de parâmetro", data = null)
@@ -134,7 +135,7 @@ constructor(
                 throw IllegalArgumentException("Parâmetros obrigatórios não podem ser nulos ou vazios")
             }
 
-            val newPlace = Place(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.timestamp,parameters.category , parameters.updatedBy, true)
+            val newPlace = Place(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.historyTimestamp,parameters.category , parameters.updatedBy, true)
             val result = placeRepository.save(newPlace)
 
             val weather = parameters.weather
@@ -143,7 +144,7 @@ constructor(
             val traffic = parameters.traffic
             val trafficResult = trafficRepository.save(traffic)
 
-            setHistory(result.placeId, result.placeTimestamp, parameters.type,parameters.latitude,parameters.longitude, parameters.updatedBy, weatherResult.weatherId!!, trafficResult.trafficId!!)
+            setHistory(result.placeId, result.placeTimestamp, parameters.entityType,parameters.latitude,parameters.longitude, parameters.updatedBy, weatherResult.weatherId!!, trafficResult.trafficId!!)
 
         } catch (ex: IllegalArgumentException) {
             ApiResponse(status = false, message = ex.message ?: "Erro de parâmetro", data = null)
@@ -152,7 +153,7 @@ constructor(
             ApiResponse(status = false, message = errorMessage, data = null)
         }
     }
-    fun setHistory(id: Long?, timestamp: Timestamp?, type: String?,latitude : Double, longitude: Double, updatedBy : Long,weatherId : Long, trafficId: Long): ApiResponse<Any> {
+    fun setHistory(id: Long?, timestamp: String?, type: String?,latitude : Double, longitude: Double, updatedBy : Long,weatherId : Long, trafficId: Long): ApiResponse<Any> {
         return try {
             val historyLog = when (type) {
                 "event" -> "evento"

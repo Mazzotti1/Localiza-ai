@@ -18,6 +18,6 @@ data class Subcategory(
 )
 
 data class ScoreTypeResponse(
-    val score: Double,
-    val type: String
+    var score: Double,
+    var type: String
 )

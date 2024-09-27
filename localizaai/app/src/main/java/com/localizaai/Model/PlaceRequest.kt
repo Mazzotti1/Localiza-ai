@@ -17,7 +17,9 @@ data class SpecificPlaceResponse(
     val location: SpecifLocation? = null,
     val name: String = "",
     val related_places: RelatedPlaces? = null,
-    val timezone: String = ""
+    val timezone: String = "",
+    val score : Double = 0.0,
+    val type : String = ""
 )
 
 data class Category(

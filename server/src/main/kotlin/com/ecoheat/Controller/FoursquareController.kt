@@ -44,7 +44,7 @@ class FoursquareController (private val messageSource: MessageSource) {
     ): ResponseEntity<Any> {
         try {
             foursquareService!!.getSpecificPlace(id)
-            val responseFromApi = foursquareService.getSpecificApiResponse()
+            val responseFromApi = foursquareService.getSpecificApiPlaceResponse()
             return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
         }catch (ex: RegistroIncorretoException) {
             val errorMessage = messageSource.getMessage("place.error.request", null, locale)

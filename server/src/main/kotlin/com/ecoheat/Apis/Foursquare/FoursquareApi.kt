@@ -67,6 +67,7 @@ class FoursquareApi (private val messageSource: MessageSource?) {
             }
 
             override fun onResponse(call: Call, response: Response) {
+                val categories = response.body
                 val responseBody = response.body?.string()
                 if (response.isSuccessful && responseBody != null) {
                     callback.onSpecificPlaceResponse(responseBody)

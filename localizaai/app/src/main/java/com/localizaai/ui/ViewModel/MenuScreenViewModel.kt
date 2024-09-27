@@ -125,12 +125,11 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var trafficResponse by mutableStateOf<TrafficResponse?>(null)
     var eventsResponse by mutableStateOf<List<EventsRequest>>(emptyList())
     var historyResponse by mutableStateOf<HistoryResponse?>(null)
-    var scoreCategoryResponse by mutableStateOf<ScoreCategoryResponse?>(null)
 
     private var locationCallback: LocationCallback? = null
     var isHoliday = mutableStateOf(false)
 
-    var placeType = ""
+
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -700,7 +699,6 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             val score = calculateLocalMovementScore(place)
         }
 
-
         val dynamicPoints = specificPlaceList.map { place ->
             val latitude = place.geocodes?.main?.latitude ?: 0.0
             val longitude = place.geocodes?.main?.longitude ?: 0.0
@@ -713,8 +711,13 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun saveHistoryPlace(parsedResponse: SpecificPlaceResponse){
 
-        val categories: List<String> = parsedResponse.categories.map { it.name }
-        val category: String = categories.joinToString("/ ")
+        val categories: List<String> = parsedResponse.categories
+            .mapNotNull { it?.name }
+        val category: String = if (categories.isNotEmpty()) {
+            categories.joinToString("/ ")
+        } else {
+            "noCategory"
+        }
         val currentTimestamp = OffsetDateTime.now().toString()
 
         val trafficData = if (trafficResponse != null) {
@@ -796,8 +799,15 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val rawScores = listOf(rawHolidayScore, rawWeatherScore, rawTrafficScore, rawHistoryScore)
         val normalizedScores = normalizeScores(rawScores)
 
-        val placeCategoriesResult = getWeightsForPlaceType(place)
-        val placeWeight = placeCategoriesResult.score
+        var placeType = ""
+        if(place.type != ""){
+           placeType = place.type
+        }else {
+            placeType = "OUTDOOR"
+        }
+
+        var placeWeight  = place.score
+
         checkIsHoliday(eventsResponse)
 
         var placeImpact = getPlaceScore(place)
@@ -814,7 +824,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             else -> ""
         }
 
-        if(placeCategoriesResult.type == "OUTDOOR"){
+        if(placeType == "OUTDOOR"){
             if (normalizedScores[1] < 0.5) {
                 weatherImpact *= 0.5
             }
@@ -837,7 +847,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                 }
             }
 
-        } else if (placeCategoriesResult.type == "INDOOR"){
+        } else if (placeType == "INDOOR"){
             if (normalizedScores[1] < 0.5) {
                 placeImpact *= 1.2
             }
@@ -1072,21 +1082,6 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         return 0.0
     }
 
-    private fun getWeightsForPlaceType(place: SpecificPlaceResponse): CategoryData {
-
-        place.categories.forEach { category ->
-            placeType = category.name
-        }
-
-        getScoreByCategory()
-
-        if(scoreCategoryResponse!!.status){
-            return scoreCategoryResponse!!.data
-        }else {
-            return CategoryData(0.0, "default")
-        }
-    }
-
     @RequiresApi(Build.VERSION_CODES.O)
     fun isPeakTime(): Boolean {
         val currentHour = LocalTime.now().hour
@@ -1115,23 +1110,6 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val stdDev = calculateStandardDeviation(scores, mean)
 
         return scores.map { normalizeZScore(it, mean, stdDev) }
-    }
-
-    private fun getScoreByCategory() {
-        viewModelScope.launch(Dispatchers.IO) {
-
-            val result = placesRepository.getCategoriesScore(placeType)
-
-            result.onSuccess { responseBody ->
-                val scoreJson = responseBody.toString()
-                val gson = Gson()
-                scoreCategoryResponse = gson.fromJson(scoreJson, ScoreCategoryResponse::class.java)
-
-                Log.d("PlaceApi", "Resultado da consulta de pontuação por categoria é: ${result.toString()}")
-            }.onFailure { exception ->
-                Log.d("PlaceApi", "Error: ${exception.message}")
-            }
-        }
     }
 
     fun getAllPlaceInfoForCalculate(name : String, lat: String, long : String){

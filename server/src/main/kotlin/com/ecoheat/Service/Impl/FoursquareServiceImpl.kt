@@ -12,6 +12,8 @@ import com.ecoheat.Model.History
 import com.ecoheat.Repository.FoursquareRepository
 import com.ecoheat.Service.IFoursquareService
 import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
@@ -105,24 +107,38 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
         }
     }
 
-    override fun getScoreCategories(categoryType: String): ApiResponse<ScoreTypeResponse> {
-        return try {
+    override fun getScoreCategories(categoryType: String) : ScoreTypeResponse {
+        try {
             if (categoryType.isEmpty()) {
-                return ApiResponse(status = false, message = "Tipo de categoria não pode ser vazio", data = null)
+                return ScoreTypeResponse(score = 0.0, type = "")
             }
 
-            val scoreData = repository.getScoreByCategory(categoryType)
+            val scoreDataList  = repository.getScoreByCategory(categoryType)
 
-            if (scoreData.score != 0.0) {
-                ApiResponse(status = true, message = "Pontuação obtida com sucesso", data = scoreData)
-            } else {
-                ApiResponse(status = false, message = "Nenhuma pontuação foi encontrada", data = scoreData)
+            val result = scoreDataList.map { scoreData ->
+                val score = scoreData[0] as Double
+                val type = scoreData[1] as String
+                ScoreTypeResponse(score = score, type = type)
+            }
+
+            val data = ScoreTypeResponse(score = 0.0, type = "")
+            for(value in result){
+                data.score = value.score
+                data.type = value.type
+                break
+            }
+
+            if (data.score != 0.0) {
+              return  data
+            }else{
+              return ScoreTypeResponse(score = 0.0, type = "")
             }
 
         } catch (ex: RegistroIncorretoException) {
             val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
             ApiResponse(status = false, message = errorMessage, data = null)
         }
+        return ScoreTypeResponse(score = 0.0, type = "")
     }
 
 
@@ -174,6 +190,38 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
             throw IllegalStateException("Expected a String but received $response")
         }
     }
+
+    fun getSpecificApiPlaceResponse(): String {
+        val response = future.join()
+        val resultObject = JsonObject()
+
+        return when (response) {
+            is List<*> -> {
+                val gson = Gson()
+                val jsonResponse = gson.toJson(response)
+                jsonResponse
+            }
+            is String -> {
+                val gson = Gson()
+                val jsonObject = gson.fromJson(response, JsonObject::class.java)
+                val categoriesArray: JsonArray = jsonObject.getAsJsonArray("categories") ?: JsonArray()
+                var categoryName: String = ""
+                if (categoriesArray.size() > 0) {
+                    val firstCategory: JsonObject = categoriesArray[0].asJsonObject
+                    categoryName = firstCategory.get("name").asString
+                }
+                val categorySpecs = this.getScoreCategories(categoryName)
+                jsonObject.addProperty("score", categorySpecs.score)
+                jsonObject.addProperty("type", categorySpecs.type)
+
+                gson.toJson(jsonObject)
+            }
+            else -> {
+                throw IllegalStateException("Expected a String or List<FoursquarePlace> but received $response")
+            }
+        }
+    }
+
 
     fun getAutocompletePlacesResponse(): String {
         val response = future.join()

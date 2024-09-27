@@ -106,10 +106,10 @@ class PlacesRepository(private val context: Context) {
         }
     }
 
-    suspend fun getCategoriesScore(placeType: String): Result<String> {
+    suspend fun getCategoriesScore(categoryType: String): Result<String> {
         return try {
             val response = withContext(Dispatchers.IO) {
-                apiService.getCategoriesScore(placeType)
+                apiService.getCategoriesScore(categoryType)
             }
 
             if (response.isSuccessful) {

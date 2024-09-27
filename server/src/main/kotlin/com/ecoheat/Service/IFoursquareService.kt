@@ -20,7 +20,7 @@ interface IFoursquareService {
 
     fun setCategories()
 
-    fun getScoreCategories(categoryType : String) : ApiResponse<ScoreTypeResponse>
+    fun getScoreCategories(categoryType : String) : ScoreTypeResponse
 
     fun onScoreCategoriesResponse(responseBody: String)
 }

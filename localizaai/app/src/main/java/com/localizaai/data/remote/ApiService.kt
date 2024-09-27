@@ -90,6 +90,6 @@ interface ApiService {
 
     @GET("/places/getScoreCategories")
     suspend fun getCategoriesScore(
-        @Query("placeType") placeType : String
+        @Query("categoryType") categoryType : String
     ) : Response<ResponseBody>
 }

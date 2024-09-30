@@ -695,9 +695,9 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val threshold = if (isPeakTime()) 0.7 else 0.5
 
         //colocar a formação dos points dentro do forEach
-        specificPlaceList.forEach{place ->
-            val score = calculateLocalMovementScore(place)
-        }
+//        specificPlaceList.forEach{place ->
+//            val score = calculateLocalMovementScore(place)
+//        }
 
         val dynamicPoints = specificPlaceList.map { place ->
             val latitude = place.geocodes?.main?.latitude ?: 0.0
@@ -711,13 +711,22 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun saveHistoryPlace(parsedResponse: SpecificPlaceResponse){
 
-        val categories: List<String> = parsedResponse.categories
-            .mapNotNull { it?.name }
-        val category: String = if (categories.isNotEmpty()) {
-            categories.joinToString("/ ")
-        } else {
+
+        val categories = parsedResponse.categories ?: emptyList()
+        var cat = ""
+
+        if (categories.isNotEmpty()) {
+            for (i in categories) {
+                cat = i.name
+                break
+            }
+        }
+
+        val category: String = cat.ifEmpty {
             "noCategory"
         }
+
+
         val currentTimestamp = OffsetDateTime.now().toString()
 
         val trafficData = if (trafficResponse != null) {
@@ -758,13 +767,13 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
         val historyRequest = HistoryRequest(
             historyTimestamp = currentTimestamp,
-            name = parsedResponse.name,
-            description = parsedResponse.closed_bucket,
+            name = parsedResponse.name ?: "Unknown",
+            description = parsedResponse.closed_bucket ?: "No description",
             entityType = "place",
             latitude = parsedResponse.geocodes?.main?.latitude ?: 0.0,
             longitude = parsedResponse.geocodes?.main?.longitude ?: 0.0,
-            category = category,
-            updatedBy = userId.toLong(),
+            category = category  ?: "Unknown",
+            updatedBy = userId.toLong()  ?: 3,
             weather = weatherData,
             traffic = trafficData
         )
@@ -1124,9 +1133,9 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                     val parsedResponse = gson.fromJson(infosPlaceJson, PlaceInfo::class.java)
 
                     infosPlaceResponseForCalculate = parsedResponse
-                    Log.d("PlacesApi", "Resultado da consulta das informações do lugar para calculo: $infosPlaceResponseForCalculate")
+                    Log.d("PlacesApiForCalculate", "Resultado da consulta das informações do lugar para calculo: $infosPlaceResponseForCalculate")
                 }.onFailure { exception ->
-                    Log.d("PlacesApi", "Error: ${exception.message}")
+                    Log.d("PlacesApiForCalculate", "Error: ${exception.message}")
                 }
             }
         }catch(e: Throwable){

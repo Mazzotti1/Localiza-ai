@@ -193,32 +193,22 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
 
     fun getSpecificApiPlaceResponse(): String {
         val response = future.join()
-        val resultObject = JsonObject()
+        return if (response is String) {
+            val gson = Gson()
+            val jsonObject = gson.fromJson(response, JsonObject::class.java)
+            val categoriesArray: JsonArray = jsonObject.getAsJsonArray("categories") ?: JsonArray()
+            var categoryName: String = ""
+            if (categoriesArray.size() > 0) {
+                val firstCategory: JsonObject = categoriesArray[0].asJsonObject
+                categoryName = firstCategory.get("name").asString
+            }
+            val categorySpecs = this.getScoreCategories(categoryName)
+            jsonObject.addProperty("score", categorySpecs.score)
+            jsonObject.addProperty("type", categorySpecs.type)
 
-        return when (response) {
-            is List<*> -> {
-                val gson = Gson()
-                val jsonResponse = gson.toJson(response)
-                jsonResponse
-            }
-            is String -> {
-                val gson = Gson()
-                val jsonObject = gson.fromJson(response, JsonObject::class.java)
-                val categoriesArray: JsonArray = jsonObject.getAsJsonArray("categories") ?: JsonArray()
-                var categoryName: String = ""
-                if (categoriesArray.size() > 0) {
-                    val firstCategory: JsonObject = categoriesArray[0].asJsonObject
-                    categoryName = firstCategory.get("name").asString
-                }
-                val categorySpecs = this.getScoreCategories(categoryName)
-                jsonObject.addProperty("score", categorySpecs.score)
-                jsonObject.addProperty("type", categorySpecs.type)
-
-                gson.toJson(jsonObject)
-            }
-            else -> {
-                throw IllegalStateException("Expected a String or List<FoursquarePlace> but received $response")
-            }
+            gson.toJson(jsonObject)
+        } else  {
+            throw IllegalStateException("Expected a String but received $response")
         }
     }
 

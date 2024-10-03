@@ -33,6 +33,8 @@ class FoursquareApi (private val messageSource: MessageSource?) {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
+                val formattedErrorMessage = "Ocorreu um erro ao chamar API: ${e.message}\nPorquê: ${e.cause}"
+                callback.onPlacesFailure(formattedErrorMessage)
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -47,8 +49,8 @@ class FoursquareApi (private val messageSource: MessageSource?) {
         })
     }
 
-    fun getSpecificPlace (id: String ,callback: IFoursquareService){
-        val url = "https://api.foursquare.com/v3/places/${id}"
+    fun getSpecificPlace(id: String, callback: IFoursquareService) {
+        val url = "https://api.foursquare.com/v3/places/$id"
 
         val request = Request.Builder()
             .url(url)
@@ -59,20 +61,16 @@ class FoursquareApi (private val messageSource: MessageSource?) {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                val errorCause = e.cause
-                val errorMessage = e.message
-
-                val formattedErrorMessage = "Ocorreu um erro ao chamar API: $errorMessage\nPorquê: $errorCause"
-                callback.onPlacesFailure(messageSource!!.getMessage(formattedErrorMessage, null, locale))
+                val formattedErrorMessage = "Ocorreu um erro ao chamar API: ${e.message}\nPorquê: ${e.cause}"
+                callback.onPlacesFailure(formattedErrorMessage)
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val categories = response.body
                 val responseBody = response.body?.string()
                 if (response.isSuccessful && responseBody != null) {
                     callback.onSpecificPlaceResponse(responseBody)
                 } else {
-                    callback.onPlacesFailure(messageSource!!.getMessage("place.error.request", null, locale))
+                    callback.onPlacesFailure("Falha na requisição")
                 }
             }
         })

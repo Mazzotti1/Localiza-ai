@@ -1,5 +1,6 @@
 package com.ecoheat.Controller
 
+import com.ecoheat.Apis.Foursquare.FoursquarePlace
 import com.ecoheat.Exception.RegistroIncorretoException
 import com.ecoheat.Service.Impl.FoursquareServiceImpl
 import com.ecoheat.Service.Impl.GoogleCalendarServiceImpl
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.*
+import java.util.concurrent.CompletableFuture
 
 @RestController
 @RequestMapping("/places")
@@ -27,29 +29,37 @@ class FoursquareController (private val messageSource: MessageSource) {
         @RequestParam long: String,
         @RequestParam radius: String,
         @RequestParam sort: String
-    ): ResponseEntity<Any> {
-        try {
-            foursquareService!!.getPlacesId(lat,long,radius,sort)
-            val responseFromApi = foursquareService.getApiResponse()
-            return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
-        }catch (ex: RegistroIncorretoException) {
-            val errorMessage = messageSource.getMessage("place.error.request", null, locale)
-            return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
-        }
+    ): CompletableFuture<ResponseEntity<out Any>>? {
+        return foursquareService?.getPlacesId(lat, long, radius, sort)
+            ?.thenApply { responseFromApi ->
+                try {
+                    val processedResponse = foursquareService.getApiResponse(responseFromApi)
+                    ResponseEntity(processedResponse, HttpStatus.ACCEPTED)
+                } catch (ex: Exception) {
+                    val errorMessage = messageSource.getMessage("place.error.request", null, locale)
+                    ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+                }
+            }
+            ?.exceptionally { ex ->
+                val errorMessage = messageSource.getMessage("place.error.request", null, locale)
+                ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+            }
     }
+
 
     @GetMapping("/specific")
     fun getSpecificPlace(
         @RequestParam id: String,
-    ): ResponseEntity<Any> {
-        try {
-            foursquareService!!.getSpecificPlace(id)
-            val responseFromApi = foursquareService.getSpecificApiPlaceResponse()
-            return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
-        }catch (ex: RegistroIncorretoException) {
-            val errorMessage = messageSource.getMessage("place.error.request", null, locale)
-            return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
-        }
+    ): CompletableFuture<ResponseEntity<String>>? {
+        return foursquareService?.getSpecificPlace(id)
+            ?.thenApply { responseFromApi ->
+                val processedResponse = foursquareService.getSpecificApiPlaceResponse(responseFromApi)
+                ResponseEntity(processedResponse, HttpStatus.ACCEPTED)
+            }
+            ?.exceptionally { ex ->
+                val errorMessage = messageSource.getMessage("place.error.request", null, locale)
+                ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+            }
     }
 
     @GetMapping("/byName")

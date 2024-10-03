@@ -4,16 +4,14 @@ import com.ecoheat.Apis.Foursquare.FoursquareApi
 import com.ecoheat.Apis.Foursquare.FoursquarePlace
 import com.ecoheat.Exception.RegistroIncorretoException
 import com.ecoheat.Model.ApiResponse
-import com.ecoheat.Model.Category
-import com.ecoheat.Model.DTOs.FoursquareCategoriesResponse
 import com.ecoheat.Model.DTOs.ScoreTypeResponse
-import com.ecoheat.Model.DTOs.Subcategory
-import com.ecoheat.Model.History
 import com.ecoheat.Repository.FoursquareRepository
+import com.ecoheat.Service.BaseFoursquareService
 import com.ecoheat.Service.IFoursquareService
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.reflect.TypeToken
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
@@ -26,27 +24,51 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
     val locale = Locale("pt")
     private lateinit var responseFromApi: Any
     private lateinit var future: CompletableFuture<Any>
-    override fun getPlacesId(lat: String,long: String, radius: String, sort: String) {
+    override fun getPlacesId(lat: String,long: String, radius: String, sort: String): CompletableFuture<String> {
+        val future = CompletableFuture<String>()
         try {
             val foursquareApi = FoursquareApi(null)
-            future = CompletableFuture()
-            foursquareApi.getPlacesId(lat,long,radius,sort,this)
+
+            foursquareApi.getPlacesId(lat,long,radius,sort, object : BaseFoursquareService() {
+                override fun onPlacesResponse(response: List<FoursquarePlace>) {
+                    val gson = Gson()
+                    val jsonResponse = gson.toJson(response)
+                    future.complete(jsonResponse)
+                }
+
+                override fun onPlacesFailure(error: String) {
+                    future.completeExceptionally(RegistroIncorretoException(error))
+                }
+            })
+
         } catch(ex: RegistroIncorretoException){
             val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
             onPlacesFailure(errorMessage)
         }
+        return future
     }
 
-    override fun getSpecificPlace(id: String) {
-        try{
+
+    override fun getSpecificPlace(id: String): CompletableFuture<String> {
+        val future = CompletableFuture<String>()
+        try {
             val foursquareApi = FoursquareApi(null)
-            future = CompletableFuture()
-            foursquareApi.getSpecificPlace(id,this)
-        }catch(ex: RegistroIncorretoException){
-            val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
-            onPlacesFailure(errorMessage)
+            foursquareApi.getSpecificPlace(id, object : BaseFoursquareService() {
+                override fun onSpecificPlaceResponse(responseBody: String) {
+                    future.complete(responseBody)
+                }
+
+                override fun onPlacesFailure(error: String) {
+                    future.completeExceptionally(RegistroIncorretoException(error))
+                }
+            })
+        } catch (ex: Exception) {
+            future.completeExceptionally(RegistroIncorretoException("generic.service.error"))
         }
+        return future
     }
+
+
 
     override fun getPlacesByName(lat: String, long: String, name: String) {
         try {
@@ -70,6 +92,7 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
         }
     }
 
+    //usado para setar no banco as categories do foursquare
     override fun setCategories() {
         try {
             //service just to set categories from foursquare, if need in future just implement the object methods
@@ -172,15 +195,11 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
         future.complete(error)
     }
 
-    fun getApiResponse(): List<FoursquarePlace> {
-        val response = future.join()
-        return if (response is List<*>) {
-            @Suppress("UNCHECKED_CAST")
-            response as List<FoursquarePlace>
-        } else {
-            throw IllegalStateException("Expected a List<FoursquarePlace> but received $response")
-        }
+    fun getApiResponse(response: String): List<FoursquarePlace> {
+        val gson = Gson()
+        return gson.fromJson(response, object : TypeToken<List<FoursquarePlace>>() {}.type)
     }
+
 
     fun getSpecificApiResponse(): String {
         val response = future.join()
@@ -191,25 +210,23 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
         }
     }
 
-    fun getSpecificApiPlaceResponse(): String {
-        val response = future.join()
-        return if (response is String) {
-            val gson = Gson()
-            val jsonObject = gson.fromJson(response, JsonObject::class.java)
-            val categoriesArray: JsonArray = jsonObject.getAsJsonArray("categories") ?: JsonArray()
-            var categoryName: String = ""
-            if (categoriesArray.size() > 0) {
-                val firstCategory: JsonObject = categoriesArray[0].asJsonObject
-                categoryName = firstCategory.get("name").asString
-            }
-            val categorySpecs = this.getScoreCategories(categoryName)
-            jsonObject.addProperty("score", categorySpecs.score)
-            jsonObject.addProperty("type", categorySpecs.type)
+    fun processJsonResponse(response: String): String {
+        val gson = Gson()
+        val jsonObject = gson.fromJson(response, JsonObject::class.java)
 
-            gson.toJson(jsonObject)
-        } else  {
-            throw IllegalStateException("Expected a String but received $response")
-        }
+        val categoriesArray: JsonArray? = jsonObject.getAsJsonArray("categories")
+        val categoryName: String = categoriesArray?.firstOrNull()?.asJsonObject
+            ?.get("name")?.asString ?: ""
+
+        val categorySpecs = getScoreCategories(categoryName)
+        jsonObject.addProperty("score", categorySpecs.score)
+        jsonObject.addProperty("type", categorySpecs.type)
+
+        return gson.toJson(jsonObject)
+    }
+
+    fun getSpecificApiPlaceResponse(response: String): String {
+        return processJsonResponse(response)
     }
 
 

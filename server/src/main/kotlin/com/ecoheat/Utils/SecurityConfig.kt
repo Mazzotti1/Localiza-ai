@@ -63,7 +63,7 @@ class SecurityConfig{
                 authorize(routeE, hasRole("USER"))
                 authorize(routeF, hasRole("USER"))
                 authorize(routeG, hasRole("USER"))
-                authorize(routeH, hasRole("USER"))
+                authorize(routeC, permitAll)
                 authorize(routeJ, hasRole("USER"))
                 authorize(routeK, hasRole("USER"))
                 authorize(routeL, hasRole("USER"))

@@ -67,31 +67,31 @@ class FoursquareController (private val messageSource: MessageSource) {
         @RequestParam lat: String,
         @RequestParam long: String,
         @RequestParam name: String
-    ): ResponseEntity<Any>{
-        try {
-            foursquareService!!.getPlacesByName(lat,long,name)
-            val responseFromApi = foursquareService.getSpecificApiResponse()
-            return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
-        }catch (ex: RegistroIncorretoException){
-            val errorMessage = messageSource.getMessage("place.error.request", null, locale)
-            return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
-        }
-
+    ): CompletableFuture<ResponseEntity<String>>? {
+        return foursquareService?.getPlacesByName(lat,long,name)
+            ?.thenApply { responseFromApi ->
+                val processedResponse = foursquareService.getPlaceNameApiResponse(responseFromApi)
+                ResponseEntity(processedResponse, HttpStatus.ACCEPTED)
+            }
+            ?.exceptionally { ex ->
+                val errorMessage = messageSource.getMessage("place.error.request", null, locale)
+                ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+            }
     }
 
     @GetMapping("/tips")
     fun getPlacesTips(
         @RequestParam id: String
-    ): ResponseEntity<Any>{
-        try {
-            foursquareService!!.getPlacesTips(id)
-            val responseFromApi = foursquareService.getSpecificApiResponse()
-            return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
-        }catch (ex: RegistroIncorretoException){
-            val errorMessage = messageSource.getMessage("place.error.request", null, locale)
-            return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
-        }
-
+    ): CompletableFuture<ResponseEntity<String>>? {
+        return foursquareService?.getPlacesTips(id)
+            ?.thenApply { responseFromApi ->
+                val processedResponse = foursquareService.getTipsApiResponse(responseFromApi)
+                ResponseEntity(processedResponse, HttpStatus.ACCEPTED)
+            }
+            ?.exceptionally { ex ->
+                val errorMessage = messageSource.getMessage("place.error.request", null, locale)
+                ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+            }
     }
 
     @GetMapping("/autocomplete")
@@ -99,15 +99,16 @@ class FoursquareController (private val messageSource: MessageSource) {
         @RequestParam search: String,
         @RequestParam lat: String,
         @RequestParam long: String,
-    ): ResponseEntity<Any>{
-        try {
-            foursquareService!!.getAutocompletePlaces(search,lat,long)
-            val responseFromApi = foursquareService.getAutocompletePlacesResponse()
-            return ResponseEntity(responseFromApi, HttpStatus.ACCEPTED)
-        }catch  (ex: RegistroIncorretoException) {
-            val errorMessage = messageSource.getMessage("place.error.request", null, locale)
-            return ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
-        }
+    ): CompletableFuture<ResponseEntity<String>>? {
+        return foursquareService?.getAutocompletePlaces(search,lat,long)
+            ?.thenApply { responseFromApi ->
+                val processedResponse = foursquareService.getAutocompletePlacesResponse(responseFromApi)
+                ResponseEntity(processedResponse, HttpStatus.ACCEPTED)
+            }
+            ?.exceptionally { ex ->
+                val errorMessage = messageSource.getMessage("place.error.request", null, locale)
+                ResponseEntity(errorMessage, HttpStatus.BAD_REQUEST)
+            }
     }
 
     @GetMapping("/setCategories")

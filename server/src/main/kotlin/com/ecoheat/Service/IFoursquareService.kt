@@ -13,10 +13,10 @@ interface IFoursquareService {
     fun getSpecificPlace (id: String): CompletableFuture<String>
     fun onSpecificPlaceResponse(responseBody: String)
 
-    fun getPlacesByName(lat: String,long: String,name: String)
-    fun getPlacesTips(id: String)
+    fun getPlacesByName(lat: String,long: String,name: String) : CompletableFuture<String>
+    fun getPlacesTips(id: String)  : CompletableFuture<String>
 
-    fun getAutocompletePlaces(search: String, lat: String, long: String)
+    fun getAutocompletePlaces(search: String, lat: String, long: String) : CompletableFuture<String>
     fun onAutocompletePlacesResponse(responseBody: String)
 
     fun setCategories()
@@ -37,9 +37,15 @@ abstract class BaseFoursquareService : IFoursquareService {
     }
 
     override fun onSpecificPlaceResponse(responseBody: String) {}
-    override fun getPlacesByName(lat: String, long: String, name: String) {}
-    override fun getPlacesTips(id: String) {}
-    override fun getAutocompletePlaces(search: String, lat: String, long: String) {}
+    override fun getPlacesByName(lat: String, long: String, name: String) : CompletableFuture<String> {
+        throw UnsupportedOperationException("This method is not implemented yet.")
+    }
+    override fun getPlacesTips(id: String) : CompletableFuture<String> {
+        throw UnsupportedOperationException("This method is not implemented yet.")
+    }
+    override fun getAutocompletePlaces(search: String, lat: String, long: String) : CompletableFuture<String> {
+        throw UnsupportedOperationException("This method is not implemented yet.")
+    }
     override fun onAutocompletePlacesResponse(responseBody: String) {}
     override fun setCategories() {}
     override fun getScoreCategories(categoryType: String): ScoreTypeResponse {

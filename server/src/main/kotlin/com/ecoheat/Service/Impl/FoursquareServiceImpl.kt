@@ -70,26 +70,47 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
 
 
 
-    override fun getPlacesByName(lat: String, long: String, name: String) {
+    override fun getPlacesByName(lat: String, long: String, name: String): CompletableFuture<String>  {
+        val future = CompletableFuture<String>()
         try {
             val foursquareApi = FoursquareApi(null)
-            future = CompletableFuture()
-            foursquareApi.getPlaceByName(lat,long,name,this)
+
+            foursquareApi.getPlaceByName(lat,long,name, object : BaseFoursquareService() {
+                override fun onSpecificPlaceResponse(responseBody: String) {
+                    future.complete(responseBody)
+                }
+
+                override fun onPlacesFailure(error: String) {
+                    future.completeExceptionally(RegistroIncorretoException(error))
+                }
+            })
         }catch(ex: RegistroIncorretoException){
             val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
             onPlacesFailure(errorMessage)
         }
+        return future
     }
 
-    override fun getPlacesTips(id: String) {
+    override fun getPlacesTips(id: String): CompletableFuture<String> {
+        val future = CompletableFuture<String>()
         try {
             val foursquareApi = FoursquareApi(null)
-            future = CompletableFuture()
-            foursquareApi.getPlacesTips(id,this)
+
+            foursquareApi.getPlacesTips(id, object : BaseFoursquareService() {
+                override fun onSpecificPlaceResponse(responseBody: String) {
+                    future.complete(responseBody)
+                }
+
+                override fun onPlacesFailure(error: String) {
+                    future.completeExceptionally(RegistroIncorretoException(error))
+                }
+            })
+
         }catch(ex: RegistroIncorretoException){
             val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
             onPlacesFailure(errorMessage)
         }
+        return future
     }
 
     //usado para setar no banco as categories do foursquare
@@ -165,15 +186,24 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
     }
 
 
-    override fun getAutocompletePlaces(search: String, lat: String, long : String){
+    override fun getAutocompletePlaces(search: String, lat: String, long : String): CompletableFuture<String> {
+        val future = CompletableFuture<String>()
         try {
             val foursquareApi = FoursquareApi(null)
-            future = CompletableFuture()
-            foursquareApi.getAutocompletePlaces(search,lat, long, this)
+            foursquareApi.getAutocompletePlaces(search,lat, long, object : BaseFoursquareService() {
+                override fun onAutocompletePlacesResponse(responseBody: String) {
+                    future.complete(responseBody)
+                }
+
+                override fun onPlacesFailure(error: String) {
+                    future.completeExceptionally(RegistroIncorretoException(error))
+                }
+            })
         }catch (ex: RegistroIncorretoException){
             val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
             onPlacesFailure(errorMessage)
         }
+        return future
     }
 
     override fun onAutocompletePlacesResponse(responseBody: String) {
@@ -189,7 +219,6 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
         responseFromApi = responseBody
         future.complete(responseBody)
     }
-
     override fun onPlacesFailure(error: String) {
         responseFromApi = error
         future.complete(error)
@@ -201,13 +230,12 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
     }
 
 
-    fun getSpecificApiResponse(): String {
-        val response = future.join()
-        return if (response is String) {
-            response
-        } else  {
-            throw IllegalStateException("Expected a String but received $response")
-        }
+    fun getPlaceNameApiResponse(response: String): String {
+        return response
+    }
+
+    fun getTipsApiResponse(response: String): String {
+        return response
     }
 
     fun processJsonResponse(response: String): String {
@@ -230,13 +258,8 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
     }
 
 
-    fun getAutocompletePlacesResponse(): String {
-        val response = future.join()
-        return if (response is String) {
-            response
-        } else {
-            throw IllegalStateException("Expected a String but received $response")
-        }
+    fun getAutocompletePlacesResponse(response: String): String {
+        return response
     }
 
     override fun onScoreCategoriesResponse(responseBody: String) {

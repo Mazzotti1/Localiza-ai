@@ -89,12 +89,8 @@ class FoursquareApi (private val messageSource: MessageSource?) {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                val errorCause = e.cause
-                val errorMessage = e.message
-
-                val formattedErrorMessage = "Ocorreu um erro ao chamar API: $errorMessage\nPorquê: $errorCause"
-                callback.onPlacesFailure(messageSource!!.getMessage(formattedErrorMessage, null, locale))
-
+                val formattedErrorMessage = "Ocorreu um erro ao chamar API: ${e.message}\nPorquê: ${e.cause}"
+                callback.onPlacesFailure(formattedErrorMessage)
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -120,12 +116,8 @@ class FoursquareApi (private val messageSource: MessageSource?) {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                val errorCause = e.cause
-                val errorMessage = e.message
-
-                val formattedErrorMessage = "Ocorreu um erro ao chamar API: $errorMessage\nPorquê: $errorCause"
-                callback.onPlacesFailure(messageSource!!.getMessage(formattedErrorMessage, null, locale))
-
+                val formattedErrorMessage = "Ocorreu um erro ao chamar API: ${e.message}\nPorquê: ${e.cause}"
+                callback.onPlacesFailure(formattedErrorMessage)
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -151,12 +143,8 @@ class FoursquareApi (private val messageSource: MessageSource?) {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                val errorCause = e.cause
-                val errorMessage = e.message
-
-                val formattedErrorMessage = "Ocorreu um erro ao chamar API: $errorMessage\nPorquê: $errorCause"
-                callback.onPlacesFailure(messageSource!!.getMessage(formattedErrorMessage, null, locale))
-
+                val formattedErrorMessage = "Ocorreu um erro ao chamar API: ${e.message}\nPorquê: ${e.cause}"
+                callback.onPlacesFailure(formattedErrorMessage)
             }
 
             override fun onResponse(call: Call, response: Response) {

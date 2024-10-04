@@ -695,8 +695,10 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val threshold = if (isPeakTime()) 0.7 else 0.5
 
         //colocar a formação dos points dentro do forEach
-//        specificPlaceList.forEach{place ->
-//            val score = calculateLocalMovementScore(place)
+//        viewModelScope.launch(Dispatchers.Default) {
+//            specificPlaceList.forEach { place ->
+//                val score = calculateLocalMovementScore(place)
+//            }
 //        }
 
         val dynamicPoints = specificPlaceList.map { place ->

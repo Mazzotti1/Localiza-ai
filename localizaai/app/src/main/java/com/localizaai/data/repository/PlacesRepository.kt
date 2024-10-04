@@ -2,14 +2,23 @@ package com.localizaai.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.localizaai.data.remote.ApiService
 import com.localizaai.data.remote.NetworkClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class PlacesRepository(private val context: Context) {
     private val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
-    private val authToken = sharedPreferences.getString("jwtToken", "").toString()
-    private val apiService = NetworkClient.create(context, authToken)
+    private val apiService: ApiService
+
+    init {
+        apiService = NetworkClient.create(context, getAuthToken())
+    }
+
+    private fun getAuthToken(): String {
+        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("jwtToken", "") ?: ""
+    }
 
     suspend fun fetchPlacesData(lat: String, long: String, radius: String, sort:String): Result<String> {
         return try {

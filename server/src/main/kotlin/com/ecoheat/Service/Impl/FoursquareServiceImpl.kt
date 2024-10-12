@@ -4,30 +4,45 @@ import com.ecoheat.Apis.Foursquare.FoursquareApi
 import com.ecoheat.Apis.Foursquare.FoursquarePlace
 import com.ecoheat.Exception.RegistroIncorretoException
 import com.ecoheat.Model.ApiResponse
-import com.ecoheat.Model.DTOs.ScoreTypeResponse
+import com.ecoheat.Model.DTOs.*
 import com.ecoheat.Repository.FoursquareRepository
 import com.ecoheat.Service.BaseFoursquareService
 import com.ecoheat.Service.IFoursquareService
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import kotlin.math.pow
+import kotlin.math.sqrt
+
 
 
 @Service
-class FoursquareServiceImpl @Autowired constructor(private val messageSource: MessageSource, private val repository: FoursquareRepository): IFoursquareService {
+class FoursquareServiceImpl @Autowired constructor(
+    private val messageSource: MessageSource,
+    private val repository: FoursquareRepository,
+    private val weatherService: WeatherServiceImpl,
+    private val googleCalendarService: GoogleCalendarServiceImpl,
+    private val trafficService: TomTomTrafficService,
+    private val historyService: HistoryServiceImpl
+) : IFoursquareService {
     val locale = Locale("pt")
     private lateinit var responseFromApi: Any
     private lateinit var future: CompletableFuture<Any>
     override fun getPlacesId(lat: String,long: String, radius: String, sort: String): CompletableFuture<String> {
         val future = CompletableFuture<String>()
         try {
-            val foursquareApi = FoursquareApi(null)
+            val foursquareApi = FoursquareApi(null,weatherService,googleCalendarService,trafficService,historyService,this)
 
             foursquareApi.getPlacesId(lat,long,radius,sort, object : BaseFoursquareService() {
                 override fun onPlacesResponse(response: List<FoursquarePlace>) {
@@ -52,7 +67,7 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
     override fun getSpecificPlace(id: String): CompletableFuture<String> {
         val future = CompletableFuture<String>()
         try {
-            val foursquareApi = FoursquareApi(null)
+            val foursquareApi = FoursquareApi(null,weatherService,googleCalendarService,trafficService,historyService,this)
             foursquareApi.getSpecificPlace(id, object : BaseFoursquareService() {
                 override fun onSpecificPlaceResponse(responseBody: String) {
                     future.complete(responseBody)
@@ -68,12 +83,10 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
         return future
     }
 
-
-
     override fun getPlacesByName(lat: String, long: String, name: String): CompletableFuture<String>  {
         val future = CompletableFuture<String>()
         try {
-            val foursquareApi = FoursquareApi(null)
+            val foursquareApi = FoursquareApi(null,weatherService,googleCalendarService,trafficService,historyService,this)
 
             foursquareApi.getPlaceByName(lat,long,name, object : BaseFoursquareService() {
                 override fun onSpecificPlaceResponse(responseBody: String) {
@@ -91,10 +104,33 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
         return future
     }
 
+    fun getPlacesByNameCalc(lat: String, long: String, name: String): CompletableFuture<PlacesNameData>  {
+        val future = CompletableFuture<PlacesNameData>()
+        try {
+            val foursquareApi = FoursquareApi(null,weatherService,googleCalendarService,trafficService,historyService,this)
+
+            foursquareApi.getPlaceByName(lat,long,name, object : BaseFoursquareService() {
+                override fun onSpecificPlaceResponse(response: String) {
+                    val gson = Gson()
+                    val placesNameData = gson.fromJson(response, PlacesNameData::class.java)
+                    future.complete(placesNameData)
+                }
+
+                override fun onPlacesFailure(error: String) {
+                    future.completeExceptionally(RegistroIncorretoException(error))
+                }
+            })
+        }catch(ex: RegistroIncorretoException){
+            val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
+            onPlacesFailure(errorMessage)
+        }
+        return future
+    }
+
     override fun getPlacesTips(id: String): CompletableFuture<String> {
         val future = CompletableFuture<String>()
         try {
-            val foursquareApi = FoursquareApi(null)
+            val foursquareApi = FoursquareApi(null,weatherService,googleCalendarService,trafficService,historyService,this)
 
             foursquareApi.getPlacesTips(id, object : BaseFoursquareService() {
                 override fun onSpecificPlaceResponse(responseBody: String) {
@@ -185,11 +221,53 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
         return ScoreTypeResponse(score = 0.0, type = "")
     }
 
+    fun getScoreCategoriesCalc(categoryType: String): CompletableFuture<ScoreTypeResponse> {
+        val future = CompletableFuture<ScoreTypeResponse>()
+
+        if (categoryType.isEmpty()) {
+            future.complete(ScoreTypeResponse(score = 0.0, type = ""))
+            return future
+        }
+
+        CompletableFuture.supplyAsync {
+            try {
+                val scoreDataList = repository.getScoreByCategory(categoryType)
+
+                // Mapeia os dados de pontuação para ScoreTypeResponse
+                val result = scoreDataList.map { scoreData ->
+                    val score = scoreData[0] as Double
+                    val type = scoreData[1] as String
+                    ScoreTypeResponse(score = score, type = type)
+                }
+
+                val data = ScoreTypeResponse(score = 0.0, type = "")
+                for (value in result) {
+                    data.score = value.score
+                    data.type = value.type
+                    break
+                }
+                data
+
+            } catch (ex: RegistroIncorretoException) {
+                future.completeExceptionally(ex)
+                return@supplyAsync null
+            }
+        }.thenAccept { result ->
+            result?.let {
+                future.complete(it)
+            } ?: future.complete(ScoreTypeResponse(score = 0.0, type = ""))
+        }.exceptionally { ex ->
+            val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
+            future.completeExceptionally(Exception(errorMessage, ex))
+            null
+        }
+        return future
+    }
 
     override fun getAutocompletePlaces(search: String, lat: String, long : String): CompletableFuture<String> {
         val future = CompletableFuture<String>()
         try {
-            val foursquareApi = FoursquareApi(null)
+            val foursquareApi = FoursquareApi(null,weatherService,googleCalendarService,trafficService,historyService,this)
             foursquareApi.getAutocompletePlaces(search,lat, long, object : BaseFoursquareService() {
                 override fun onAutocompletePlacesResponse(responseBody: String) {
                     future.complete(responseBody)
@@ -239,18 +317,7 @@ class FoursquareServiceImpl @Autowired constructor(private val messageSource: Me
     }
 
     fun processJsonResponse(response: String): String {
-        val gson = Gson()
-        val jsonObject = gson.fromJson(response, JsonObject::class.java)
-
-        val categoriesArray: JsonArray? = jsonObject.getAsJsonArray("categories")
-        val categoryName: String = categoriesArray?.firstOrNull()?.asJsonObject
-            ?.get("name")?.asString ?: ""
-
-        val categorySpecs = getScoreCategories(categoryName)
-        jsonObject.addProperty("score", categorySpecs.score)
-        jsonObject.addProperty("type", categorySpecs.type)
-
-        return gson.toJson(jsonObject)
+        return response
     }
 
     fun getSpecificApiPlaceResponse(response: String): String {

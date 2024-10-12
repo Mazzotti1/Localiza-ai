@@ -4,6 +4,8 @@ import com.ecoheat.Exception.RegistroIncorretoException
 
 import com.ecoheat.Service.IWeatherService
 import com.ecoheat.Apis.WeatherApi.WeatherApi
+import com.ecoheat.Model.DTOs.WeatherData
+import com.google.gson.Gson
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
@@ -24,6 +26,33 @@ class WeatherServiceImpl @Autowired constructor(private val messageSource: Messa
             val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
             onWeatherFailure(errorMessage)
         }
+    }
+
+     fun getWeatherPropsCalc(q: String?, days: Int?, hour: Int?, lang: String?): CompletableFuture<WeatherData> {
+         val future = CompletableFuture<WeatherData>()
+         try {
+            val weatherApi = WeatherApi(null)
+            weatherApi.getWeatherJson(q,days,hour,lang, object : IWeatherService{
+                override fun getWeatherProps(q: String?, days: Int?, hour: Int?, lang: String?) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onWeatherResponse(response: String) {
+                    val gson = Gson()
+                    val weatherData = gson.fromJson(response, WeatherData::class.java)
+                    future.complete(weatherData)
+                }
+
+                override fun onWeatherFailure(errorMessage: String) {
+                    future.completeExceptionally(Exception(errorMessage))
+                }
+
+            })
+        } catch (ex: RegistroIncorretoException) {
+            val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
+            future.completeExceptionally(Exception(errorMessage))
+        }
+         return future
     }
 
     override fun onWeatherResponse(response: String) {

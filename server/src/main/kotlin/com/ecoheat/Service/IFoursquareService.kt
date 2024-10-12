@@ -10,7 +10,7 @@ interface IFoursquareService {
     fun onPlacesResponse(response: List<FoursquarePlace>)
     fun onPlacesFailure(error: String)
 
-    fun getSpecificPlace (id: String): CompletableFuture<String>
+    fun getSpecificPlace (id: String, language: String): CompletableFuture<String>
     fun onSpecificPlaceResponse(responseBody: String)
 
     fun getPlacesByName(lat: String,long: String,name: String) : CompletableFuture<String>
@@ -32,7 +32,7 @@ abstract class BaseFoursquareService : IFoursquareService {
     }
     override fun onPlacesResponse(response: List<FoursquarePlace>) {}
     override fun onPlacesFailure(error: String) {}
-    override fun getSpecificPlace(id: String): CompletableFuture<String> {
+    override fun getSpecificPlace(id: String, language: String): CompletableFuture<String> {
         throw UnsupportedOperationException("This method is not implemented yet.")
     }
 

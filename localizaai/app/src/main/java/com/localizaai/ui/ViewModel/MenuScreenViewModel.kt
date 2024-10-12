@@ -334,9 +334,12 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     }
 
     suspend fun fetchSpecificPlaceDataWithRetry(fsqId: String, retries: Int = 1): Result<String> {
+        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+        val savedLanguage = sharedPreferences.getString("language", "en") ?: "en"
+        language.value = savedLanguage
         repeat(retries) {
             if (rateLimiter.tryAcquire(1, TimeUnit.SECONDS)) {
-                val result = placesRepository.fetchSpecificPlacesData(fsqId)
+                val result = placesRepository.fetchSpecificPlacesData(fsqId, savedLanguage)
                 if (result.isSuccess) {
                     return result
                 }

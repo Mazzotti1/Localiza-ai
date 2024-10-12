@@ -50,8 +50,9 @@ class FoursquareController (private val messageSource: MessageSource) {
     @GetMapping("/specific")
     fun getSpecificPlace(
         @RequestParam id: String,
+        @RequestParam language: String
     ): CompletableFuture<ResponseEntity<String>>? {
-        return foursquareService?.getSpecificPlace(id)
+        return foursquareService?.getSpecificPlace(id,language)
             ?.thenApply { responseFromApi ->
                 val processedResponse = foursquareService.getSpecificApiPlaceResponse(responseFromApi)
                 ResponseEntity(processedResponse, HttpStatus.ACCEPTED)

@@ -56,7 +56,7 @@ interface ApiService {
 
 
     @GET("/places/specific")
-    suspend fun getSpecificPlaceData(@Query("id") id: String): Response<ResponseBody>
+    suspend fun getSpecificPlaceData(@Query("id") id: String, @Query("language") language: String): Response<ResponseBody>
 
     @GET("/places/byName")
     suspend fun getPlacesByNameData(

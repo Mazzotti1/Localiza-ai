@@ -39,10 +39,10 @@ class PlacesRepository(private val context: Context) {
         }
     }
 
-    suspend fun fetchSpecificPlacesData(id:String): Result<String> {
+    suspend fun fetchSpecificPlacesData(id:String, language:String): Result<String> {
         return try {
             val response = withContext(Dispatchers.IO) {
-                apiService.getSpecificPlaceData(id)
+                apiService.getSpecificPlaceData(id, language)
             }
 
             if (response.isSuccessful) {

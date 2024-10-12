@@ -68,7 +68,7 @@ class FoursquareApi @Autowired constructor(
         })
     }
 
-    fun getSpecificPlace(id: String, callback: IFoursquareService) {
+    fun getSpecificPlace(id: String,language: String, callback: IFoursquareService) {
         val url = "https://api.foursquare.com/v3/places/$id"
 
         val request = Request.Builder()
@@ -90,7 +90,7 @@ class FoursquareApi @Autowired constructor(
                     val gson = Gson()
                     val specificPlace = gson.fromJson(responseBody, SpecificPlaceData::class.java)
 
-                    val placeScore = calculatePlaceMovementScore(specificPlace)
+                    val placeScore = calculatePlaceMovementScore(specificPlace, language)
 
                     val updatedPlace = specificPlace.copy(
                         score = placeScore
@@ -214,7 +214,7 @@ class FoursquareApi @Autowired constructor(
         })
     }
 
-    private fun calculatePlaceMovementScore(place: SpecificPlaceData) : Double{
+    private fun calculatePlaceMovementScore(place: SpecificPlaceData, language: String) : Double{
 
         var categoryName : String = ""
         val categories = place.categories
@@ -225,7 +225,6 @@ class FoursquareApi @Autowired constructor(
 
         val calendar = Calendar.getInstance()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        val language = "pt"  //pegar pelos json do specfic dps
 
         val weatherData = weatherService!!.getWeatherPropsCalc(place.location!!.locality,1,hour,language).get()
         val trafficData = trafficService!!.getTomTomTrafficPropsCalc(place.geocodes!!.main!!.latitude,place.geocodes.main!!.longitude).get()

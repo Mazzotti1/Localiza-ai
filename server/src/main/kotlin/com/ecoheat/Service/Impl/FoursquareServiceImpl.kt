@@ -64,11 +64,11 @@ class FoursquareServiceImpl @Autowired constructor(
     }
 
 
-    override fun getSpecificPlace(id: String): CompletableFuture<String> {
+    override fun getSpecificPlace(id: String, language: String): CompletableFuture<String> {
         val future = CompletableFuture<String>()
         try {
             val foursquareApi = FoursquareApi(null,weatherService,googleCalendarService,trafficService,historyService,this)
-            foursquareApi.getSpecificPlace(id, object : BaseFoursquareService() {
+            foursquareApi.getSpecificPlace(id,language, object : BaseFoursquareService() {
                 override fun onSpecificPlaceResponse(responseBody: String) {
                     future.complete(responseBody)
                 }

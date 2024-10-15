@@ -725,6 +725,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val historyRequest = HistoryRequest(
             historyTimestamp = currentTimestamp,
             name = parsedResponse.name ?: "Unknown",
+            fsqId = parsedResponse.fsq_id,
             description = parsedResponse.closed_bucket ?: "No description",
             entityType = "place",
             latitude = parsedResponse.geocodes?.main?.latitude ?: 0.0,

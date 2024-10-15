@@ -5,6 +5,7 @@ import java.sql.Timestamp
 data class HistoryRequest(
     val historyTimestamp: String,
     val name : String,
+    val fsqId:String,
     val description : String,
     val entityType: String,
     val latitude : Double,

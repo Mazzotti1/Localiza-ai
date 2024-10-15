@@ -2,13 +2,12 @@ package com.ecoheat.Model.DTOs
 
 import com.ecoheat.Model.Traffic
 import com.ecoheat.Model.Weather
-import java.sql.Timestamp
-
 
 
 data class HistoryRequest(
     val historyTimestamp: String,
     val name : String,
+    val fsqId : String,
     val description : String,
     val entityType: String,
     val latitude : Double,
@@ -27,22 +26,22 @@ data class HistoryResponse(
 )
 
 data class History(
-    val historyId : Int,
+    val historyId: Int,
     val historyTimestamp: String,
-    val entityId : Int,
+    val entityId: Int,
     val entityType: String,
-    val latitude : Double,
+    val latitude: Double,
     val longitude: Double,
-    val updatedBy : Long,
-    val isActive : Boolean,
+    val updatedBy: Int,
+    val isActive: Boolean,
     val weather: WeatherResponse,
     val traffic:TrafficResponse
 )
 
 data class WeatherResponse(
     val condition : String,
-    val temperature : Double,
-    val humidity : Int,
+    val temperature : String,
+    val humidity : String,
     val rainChance : Int
 )
 

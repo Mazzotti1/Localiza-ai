@@ -1,8 +1,6 @@
 package com.ecoheat.Apis.Foursquare
 
-import com.ecoheat.Model.DTOs.SpecificPlaceData
-import com.ecoheat.Model.DTOs.TrafficData
-import com.ecoheat.Model.DTOs.WeatherData
+import com.ecoheat.Model.DTOs.*
 import com.ecoheat.Service.IFoursquareService
 import com.ecoheat.Service.Impl.*
 import com.google.gson.Gson
@@ -10,6 +8,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.github.cdimascio.dotenv.dotenv
 import okhttp3.*
+import okhttp3.Response
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.MessageSource
 import java.io.IOException
@@ -216,105 +215,177 @@ class FoursquareApi @Autowired constructor(
 
     private fun calculatePlaceMovementScore(place: SpecificPlaceData, language: String) : Double{
 
-        var categoryName : String = ""
-        val categories = place.categories
-        if (categories!!.isNotEmpty()) {
-            val firstCategory = categories[0]
-            categoryName = firstCategory.name
-        }
+        val categoryName = place.categories?.firstOrNull()?.name ?: ""
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
-        val calendar = Calendar.getInstance()
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-
-        val weatherData = weatherService!!.getWeatherPropsCalc(place.location!!.locality,1,hour,language).get()
-        val trafficData = trafficService!!.getTomTomTrafficPropsCalc(place.geocodes!!.main!!.latitude,place.geocodes.main!!.longitude).get()
-//        val historyData = historyService.getHistoryByLocation(latitude,longitude, "800")
-        val placeCategory = placeService!!.getScoreCategoriesCalc(categoryName).get()
+        val weatherData = weatherService?.getWeatherPropsCalc(place.location?.locality, 1, hour, language)?.get()
+        val trafficData = trafficService?.getTomTomTrafficPropsCalc(place.geocodes?.main?.latitude, place.geocodes?.main?.longitude)?.get()
+        val placeCategory = placeService?.getScoreCategoriesCalc(categoryName)?.get()
+        val historyData = historyService?.getHistoryForPlace(place.fsq_id ?: "")?.get()
 
         val rawWeatherScore = getWeatherScore(weatherData, language)
-        val rawTrafficScore = getTrafficScore(trafficData)
-        val rawHistoryScore = getHistoryScore()
-        var placeImpact = getPlaceScore(place.name.toString(),place.geocodes.main.latitude,place.geocodes.main.longitude, place.closed_bucket!!)
+        val rawTrafficScore = trafficData?.let { getTrafficScore(it) }
+        var placeImpact = getPlaceScore(
+            place.name ?: "",
+            place.geocodes?.main?.latitude ?: 0.0,
+            place.geocodes?.main?.longitude ?: 0.0,
+            (place.closed_bucket ?: 0).toString()
+        )
 
+        val rawScores = listOf(rawWeatherScore, rawTrafficScore)
+        val normalizedScores = normalizeScores(rawScores as List<Double>)
 
-        val rawScores = listOf( rawWeatherScore, rawTrafficScore, rawHistoryScore)
-        val normalizedScores = normalizeScores(rawScores)
-
-        var placeType = ""
-        if(placeCategory.type != ""){
-            placeType = placeCategory.type
-        }else {
-            placeType = "OUTDOOR"
-        }
-
-        var placeWeight  = placeCategory.score
+        val placeType = placeCategory?.type ?: "OUTDOOR"
+        val placeWeight = placeCategory?.score ?: 1.0
 
         var weatherImpact = normalizedScores[0]
         var trafficImpact = normalizedScores[1]
-        val historyImpact = normalizedScores[2]
 
-        var conditionText = when (language){
-            "en" -> "Clear"
-            "pt" -> "Céu limpo"
-            else -> ""
+        weatherImpact = adjustWeatherImpact(weatherImpact, weatherData, placeType, language)
+
+        if (placeType == "INDOOR" && trafficImpact < 0.5) {
+            placeImpact *= 1.2
         }
 
-        if(placeType == "OUTDOOR"){
-            if (normalizedScores[1] < 0.5) {
-                weatherImpact *= 0.5
-            }
+        var adjustedTrafficImpact = trafficImpact
+        var adjustedWeatherImpact = weatherImpact
+        var adjustedPlaceImpact = placeImpact
 
-            weatherData!!.forecast.forecastday.forEach { weather ->
-                weather.hour.forEach { hour ->
-                    if (hour.is_day == 1) {
-                        if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
-                            weatherImpact *= 1.2
-                        } else {
-                            weatherImpact *= 0.6
-                        }
-                    } else {
-                        if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
-                            weatherImpact *= 1.1
-                        } else {
-                            weatherImpact *= 0.5
-                        }
-                    }
-                }
-            }
+        if (historyData != null) {
+            if(historyData.isNotEmpty()){
+                val trafficTrends = getTrafficTrendsFromHistory(historyData) ?: 1.0
+                val weatherTrends = getWeatherTrendsFromHistory(historyData) ?: 1.0
+                val placeTrends = getPlacesTrendsFromHistory(historyData) ?: 1.0
 
-        } else if (placeType == "INDOOR"){
-            if (normalizedScores[1] < 0.5) {
-                placeImpact *= 1.2
-            }
-
-            weatherData!!.forecast.forecastday.forEach { weather ->
-                weather.hour.forEach { hour ->
-                    if (hour.is_day == 1) {
-                        if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
-                            weatherImpact *= 1.2
-                        } else {
-                            weatherImpact *= 0.8
-                        }
-                    } else {
-                        if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
-                            weatherImpact *= 1.1
-                        } else {
-                            weatherImpact *= 0.9
-                        }
-                    }
-                }
+                 adjustedTrafficImpact = trafficImpact * trafficTrends
+                 adjustedWeatherImpact = weatherImpact * weatherTrends
+                 adjustedPlaceImpact = placeImpact * placeTrends
             }
         }
 
-        val weightedScore = (
-                (placeWeight * placeImpact) *
-                (placeWeight * weatherImpact) *
-                (placeWeight * trafficImpact) *
-                (placeWeight * historyImpact)
-                )
-
-        return weightedScore
+        return calculateWeightedScore(adjustedPlaceImpact, adjustedWeatherImpact, adjustedTrafficImpact, placeWeight)
     }
+
+    private fun calculateWeightedScore(placeImpact: Double, weatherImpact: Double, trafficImpact: Double, placeWeight: Double): Double {
+        return placeWeight * (placeImpact + weatherImpact + trafficImpact) / 3
+    }
+
+    private fun adjustWeatherImpact(weatherImpact: Double, weatherData: WeatherData?, placeType: String, language: String): Double {
+        var impact = weatherImpact
+        val conditionText = if (language == "en") "Clear" else "Céu limpo"
+
+        weatherData?.forecast?.forecastday?.forEach { weather ->
+            weather.hour.forEach { hour ->
+                val isDay = hour.is_day == 1
+                if (placeType == "OUTDOOR") {
+                    impact = adjustOutdoorWeatherImpact(impact, hour, isDay, conditionText)
+                } else if (placeType == "INDOOR") {
+                    impact = adjustIndoorWeatherImpact(impact, hour, isDay, conditionText)
+                }
+            }
+        }
+        return impact
+    }
+
+    private fun adjustOutdoorWeatherImpact(impact:Double, hour:Hour, isDay:Boolean, conditionText: String): Double {
+        return when (isDay) {
+            true -> { // Durante o dia
+                if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
+                    impact * 1.2 // Aumenta o impacto se a condição for favorável
+                } else {
+                    impact * 0.6 // Reduz o impacto se a condição não for favorável
+                }
+            }
+            else -> { // Durante a noite
+                if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
+                    impact * 1.1 // Aumenta o impacto se a condição for favorável
+                } else {
+                    impact * 0.5 // Reduz o impacto se a condição não for favorável
+                }
+            }
+        }
+    }
+
+    private fun adjustIndoorWeatherImpact(impact:Double, hour:Hour, isDay:Boolean, conditionText: String): Double{
+        return when (isDay) {
+            true -> { // Durante o dia
+                if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
+                    impact * 1.2 // Aumenta o impacto se a condição for favorável
+                } else {
+                    impact * 0.8 // Reduz o impacto se a condição não for favorável
+                }
+            }
+            else -> { // Durante a noite
+                if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
+                    impact * 1.1 // Aumenta o impacto se a condição for favorável
+                } else {
+                    impact * 0.9 // Reduz o impacto se a condição não for favorável
+                }
+            }
+        }
+    }
+
+    private fun getPlacesTrendsFromHistory(historyData:List<History>): Double{
+        return 0.0
+    }
+
+    private fun getTrafficTrendsFromHistory(historyData: List<History>): Double {
+        if (historyData.isEmpty()) return 1.0 // Retorna um padrão (neutro) se não houver dados
+
+        // Extraindo as informações de tráfego
+        val currentSpeeds = historyData.map { it.traffic.currentSpeed }
+        val currentTravelTimes = historyData.map { it.traffic.currentTravelTime }
+
+        val averageCurrentSpeed = currentSpeeds.average()
+        val averageCurrentTravelTime = currentTravelTimes.average()
+
+        val lastTraffic = historyData.last().traffic
+
+        val speedTrend = when {
+            lastTraffic.currentSpeed > averageCurrentSpeed -> 1.1 // Tendência de aumento de velocidade
+            lastTraffic.currentSpeed < averageCurrentSpeed -> 0.9 // Tendência de diminuição de velocidade
+            else -> 1.0 // Velocidade estável
+        }
+
+        val travelTimeTrend = when {
+            lastTraffic.currentTravelTime < averageCurrentTravelTime -> 1.1 // Tendência de diminuição do tempo de viagem
+            lastTraffic.currentTravelTime > averageCurrentTravelTime -> 0.9 // Tendência de aumento do tempo de viagem
+            else -> 1.0 // Tempo de viagem estável
+        }
+
+        val closureImpact = if (lastTraffic.roadClosure) 0.8 else 1.0
+        val confidenceImpact = if (lastTraffic.confidence < 0.5) 0.9 else 1.1
+
+        val finalTrafficTrend = speedTrend * travelTimeTrend * closureImpact * confidenceImpact
+
+        return finalTrafficTrend
+    }
+
+
+    private fun getWeatherTrendsFromHistory(historyData: List<History>): Double {
+        if (historyData.isEmpty()) return 1.0
+
+        val temperatures = historyData.map { it.weather.temperature.toDoubleOrNull() ?: 0.0 }
+
+        val averageTemperature = temperatures.average()
+        val currentTemperature = temperatures.lastOrNull() ?: 0.0
+
+        val trend = when {
+            currentTemperature > averageTemperature -> 1.1 // Tendência de aumento de temperatura
+            currentTemperature < averageTemperature -> 0.9 // Tendência de diminuição de temperatura
+            else -> 1.0 // Temperatura estável
+        }
+
+        // Ajuste com base na condição do tempo
+        val conditionImpact = when {
+            historyData.last().weather.condition.contains("Sunny", ignoreCase = true) -> 1.2
+            historyData.last().weather.condition.contains("Rain", ignoreCase = true) -> 0.8
+            else -> 1.0
+        }
+
+        return trend * conditionImpact
+    }
+
 
     fun calculateMean(values: List<Double>): Double {
         return values.sum() / values.size
@@ -433,9 +504,6 @@ class FoursquareApi @Autowired constructor(
         }
 
         return score
-    }
-    private fun getHistoryScore() : Double{
-        return 0.0
     }
     private fun getPlaceScore(name: String, latitude : Double, longitude: Double, closedBucket: String) : Double{
         var placeScore: Double = 0.0

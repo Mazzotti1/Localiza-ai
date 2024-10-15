@@ -6,8 +6,13 @@ import com.ecoheat.Service.IWeatherService
 import com.ecoheat.Apis.WeatherApi.WeatherApi
 import com.ecoheat.Model.*
 import com.ecoheat.Model.DTOs.HistoryRequest
+import com.ecoheat.Model.DTOs.History as DTOHistory
+import com.ecoheat.Model.DTOs.TrafficResponse
+import com.ecoheat.Model.DTOs.WeatherData
+import com.ecoheat.Model.DTOs.WeatherResponse
 import com.ecoheat.Repository.*
 import com.ecoheat.Service.IHistoryService
+import com.google.gson.Gson
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.parsing.Location
 import org.springframework.context.MessageSource
@@ -92,12 +97,6 @@ constructor(
     ): ApiResponse<Any> {
         return try {
 
-            var isDuplicatedPlace = parameters.name?.let { eventRepository.findEventByName(it) }
-
-            if(isDuplicatedPlace != 0){
-                return ApiResponse(status = false, message = "Lugar já existe", data = null)
-            }
-
             if (parameters.name.isNullOrBlank()  || parameters.description.isNullOrBlank() ) {
                 throw IllegalArgumentException("Parâmetros obrigatórios não podem ser nulos ou vazios")
             }
@@ -126,16 +125,11 @@ constructor(
     ): ApiResponse<Any> {
         return try {
 
-            var isDuplicatedPlace = parameters.name?.let { placeRepository.findPlaceByName(it) }
-            if(isDuplicatedPlace != 0){
-                return ApiResponse(status = false, message = "Lugar já existe", data = null)
-            }
-
             if (parameters.name.isNullOrBlank()  || parameters.description.isNullOrBlank() ) {
                 throw IllegalArgumentException("Parâmetros obrigatórios não podem ser nulos ou vazios")
             }
 
-            val newPlace = Place(null,parameters.name,parameters.description,parameters.latitude,parameters.longitude ,parameters.historyTimestamp,parameters.category , parameters.updatedBy, true)
+            val newPlace = Place(null,parameters.name,parameters.fsqId,parameters.description,parameters.latitude,parameters.longitude ,parameters.historyTimestamp,parameters.category , parameters.updatedBy, true)
             val result = placeRepository.save(newPlace)
 
             val weather = parameters.weather
@@ -170,6 +164,53 @@ constructor(
             ApiResponse(status = false, message = errorMessage, data = null)
         }
     }
+
+    fun getHistoryForPlace(fsqId: String): CompletableFuture<List<DTOHistory>> {
+        val future = CompletableFuture<List<DTOHistory>>()
+
+        val historyFuture = historyRepository.findHistoryByFsqId(fsqId)
+
+        historyFuture.thenApply { result ->
+            val historyList = result.map { row ->
+                val weatherResponse = WeatherResponse(
+                    condition = row[8] as String,
+                    temperature = row[9] as String,
+                    humidity = row[10] as String,
+                    rainChance = row[11] as Int
+                )
+
+                val trafficResponse = TrafficResponse(
+                    currentSpeed = (row[12] as? Long)?.toInt() ?: 0,  
+                    freeFlowSpeed = (row[13] as? Long)?.toInt() ?: 0,  
+                    currentTravelTime = (row[14] as? Long)?.toInt() ?: 0,  
+                    freeFlowTravelTime = (row[15] as? Long)?.toInt() ?: 0,  
+                    confidence = row[16] as Double,
+                    roadClosure = row[17] as Boolean
+                )
+
+                DTOHistory(
+                    historyId = (row[0] as? Long)?.toInt() ?: 0,  
+                    historyTimestamp = row[1] as String,
+                    entityId = (row[2] as? Long)?.toInt() ?: 0,  
+                    entityType = row[3] as String,
+                    latitude = row[4] as Double,
+                    longitude = row[5] as Double,
+                    updatedBy = (row[6] as? Long)?.toInt() ?: 0,  
+                    isActive = row[7] as Boolean,
+                    weather = weatherResponse,
+                    traffic = trafficResponse
+                )
+            }
+
+            future.complete(historyList)
+        }.exceptionally { ex ->
+            future.completeExceptionally(ex)
+            null
+        }
+
+        return future
+    }
+
 
     override fun onHistoryResponse(response: ApiResponse<*>) {
         responseFromApi = response

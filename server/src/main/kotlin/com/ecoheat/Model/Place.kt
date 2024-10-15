@@ -15,6 +15,9 @@ data class Place (
     @Column(name="place_name",nullable = false)
     val placeName: String,
 
+    @Column(name="fsqid",nullable = false)
+    val fsqId: String,
+
     @Column(name="place_description",nullable = false)
     val placeDescription: String,
 

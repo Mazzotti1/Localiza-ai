@@ -16,6 +16,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -218,10 +219,13 @@ class FoursquareApi @Autowired constructor(
         val categoryName = place.categories?.firstOrNull()?.name ?: ""
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
-        val weatherData = weatherService?.getWeatherPropsCalc(place.location?.locality, 1, hour, language)?.get()
-        val trafficData = trafficService?.getTomTomTrafficPropsCalc(place.geocodes?.main?.latitude, place.geocodes?.main?.longitude)?.get()
-        val placeCategory = placeService?.getScoreCategoriesCalc(categoryName)?.get()
-        val historyData = historyService?.getHistoryForPlace(place.fsq_id ?: "")?.get()
+        val resultData = fetchAllDataAsync(place.location?.locality, hour, language, place.geocodes?.main?.latitude,  place.geocodes?.main?.longitude, categoryName, place.fsq_id ?: "", place.name!!).get()
+
+        val weatherData = resultData["weatherData"] as? WeatherData
+        val trafficData = resultData["trafficData"] as? TrafficData
+        val placeCategory = resultData["placeCategory"] as? ScoreTypeResponse
+        val historyData = resultData["historyData"] as? List<History>
+        val infosPlace = resultData["infosPlace"] as? PlacesNameData
 
         val rawWeatherScore = getWeatherScore(weatherData, language)
         val rawTrafficScore = trafficData?.let { getTrafficScore(it) }
@@ -229,7 +233,8 @@ class FoursquareApi @Autowired constructor(
             place.name ?: "",
             place.geocodes?.main?.latitude ?: 0.0,
             place.geocodes?.main?.longitude ?: 0.0,
-            (place.closed_bucket ?: 0).toString()
+            (place.closed_bucket ?: 0).toString(),
+            infosPlace!!
         )
 
         val rawScores = listOf(rawWeatherScore, rawTrafficScore)
@@ -265,6 +270,43 @@ class FoursquareApi @Autowired constructor(
 
         return calculateWeightedScore(adjustedPlaceImpact, adjustedWeatherImpact, adjustedTrafficImpact, placeWeight)
     }
+
+    fun fetchAllDataAsync(
+        locality: String?,
+        hour: Int?,
+        language: String?,
+        latitude: Double?,
+        longitude: Double?,
+        categoryName: String?,
+        fsqId: String?,
+        name: String
+    ): CompletableFuture<Map<String, Any?>> {
+
+        val weatherFuture = weatherService?.getWeatherPropsCalc(locality, 1, hour, language)
+        val trafficFuture = trafficService?.getTomTomTrafficPropsCalc(latitude, longitude)
+        val placeCategoryFuture = placeService?.getScoreCategoriesCalc(categoryName!!)
+        val historyFuture = historyService?.getHistoryForPlace(fsqId ?: "")
+        val infosPlaceFuture = placeService!!.getPlacesByNameCalc(latitude.toString(), longitude.toString(), name)
+
+        return CompletableFuture.allOf(weatherFuture, trafficFuture, placeCategoryFuture, historyFuture, infosPlaceFuture)
+            .thenApply {
+                val weatherData = weatherFuture?.join()
+                val trafficData = trafficFuture?.join()
+                val placeCategory = placeCategoryFuture?.join()
+                val historyData = historyFuture?.join()
+                val infosPlace = infosPlaceFuture.join()
+
+                mapOf(
+                    "weatherData" to weatherData,
+                    "trafficData" to trafficData,
+                    "placeCategory" to placeCategory,
+                    "historyData" to historyData,
+                    "infosPlace" to infosPlace
+                )
+            }
+    }
+
+
 
     private fun calculateWeightedScore(placeImpact: Double, weatherImpact: Double, trafficImpact: Double, placeWeight: Double): Double {
         return placeWeight * (placeImpact + weatherImpact + trafficImpact) / 3
@@ -505,10 +547,8 @@ class FoursquareApi @Autowired constructor(
 
         return score
     }
-    private fun getPlaceScore(name: String, latitude : Double, longitude: Double, closedBucket: String) : Double{
+    private fun getPlaceScore(name: String, latitude : Double, longitude: Double, closedBucket: String, infosPlace: PlacesNameData) : Double{
         var placeScore: Double = 0.0
-
-        val infosPlace = placeService!!.getPlacesByNameCalc(latitude.toString(), longitude.toString(), name).get()
 
         try {
             val popularity = infosPlace!!.place!!.popularity

@@ -260,11 +260,9 @@ class FoursquareApi @Autowired constructor(
             if(historyData.isNotEmpty()){
                 val trafficTrends = getTrafficTrendsFromHistory(historyData) ?: 1.0
                 val weatherTrends = getWeatherTrendsFromHistory(historyData) ?: 1.0
-                val placeTrends = getPlacesTrendsFromHistory(historyData) ?: 1.0
 
                  adjustedTrafficImpact = trafficImpact * trafficTrends
                  adjustedWeatherImpact = weatherImpact * weatherTrends
-                 adjustedPlaceImpact = placeImpact * placeTrends
             }
         }
 
@@ -309,8 +307,15 @@ class FoursquareApi @Autowired constructor(
 
 
     private fun calculateWeightedScore(placeImpact: Double, weatherImpact: Double, trafficImpact: Double, placeWeight: Double): Double {
-        return placeWeight * (placeImpact + weatherImpact + trafficImpact) / 3
+        val normalizedPlaceImpact = placeImpact.coerceIn(0.0, 1.0)
+        val normalizedWeatherImpact = weatherImpact.coerceIn(0.0, 1.0)
+        val normalizedTrafficImpact = trafficImpact.coerceIn(0.0, 1.0)
+
+        val weightedScore = placeWeight * (normalizedPlaceImpact + normalizedWeatherImpact + normalizedTrafficImpact) / 3
+
+        return weightedScore.coerceIn(0.0, 1.0)
     }
+
 
     private fun adjustWeatherImpact(weatherImpact: Double, weatherData: WeatherData?, placeType: String, language: String): Double {
         var impact = weatherImpact
@@ -365,10 +370,6 @@ class FoursquareApi @Autowired constructor(
                 }
             }
         }
-    }
-
-    private fun getPlacesTrendsFromHistory(historyData:List<History>): Double{
-        return 0.0
     }
 
     private fun getTrafficTrendsFromHistory(historyData: List<History>): Double {
@@ -497,7 +498,7 @@ class FoursquareApi @Autowired constructor(
 
         } catch (e: Throwable) {
         }
-        return score
+        return score.coerceAtLeast(0.0)
     }
     private fun getTrafficScore(trafficData : TrafficData) : Double{
         var score: Double = 0.0
@@ -545,7 +546,7 @@ class FoursquareApi @Autowired constructor(
         } catch (e: Throwable) {
         }
 
-        return score
+        return score.coerceAtLeast(0.0)
     }
     private fun getPlaceScore(name: String, latitude : Double, longitude: Double, closedBucket: String, infosPlace: PlacesNameData) : Double{
         var placeScore: Double = 0.0
@@ -596,7 +597,7 @@ class FoursquareApi @Autowired constructor(
         } catch (e: Throwable) {
         }
 
-        return placeScore
+        return placeScore.coerceAtLeast(0.0)
     }
 
 }

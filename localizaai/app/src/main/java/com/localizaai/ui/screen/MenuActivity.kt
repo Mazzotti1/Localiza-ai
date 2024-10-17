@@ -81,6 +81,11 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap.MAP_TYPE_HYBRID
+import com.google.android.gms.maps.GoogleMap.MAP_TYPE_NORMAL
+import com.google.android.gms.maps.GoogleMap.MAP_TYPE_SATELLITE
+import com.google.android.gms.maps.GoogleMap.MAP_TYPE_TERRAIN
+import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -88,21 +93,25 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.PointOfInterest
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.TileOverlay
 import com.google.maps.android.compose.rememberMarkerState
+import com.google.maps.android.heatmaps.Gradient
 import com.google.maps.android.heatmaps.HeatmapTileProvider
 import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import com.localizaai.ui.util.AnimatedCircle
 import com.localizaai.ui.util.FilterButton
 import com.localizaai.ui.util.HeatMapButton
+import com.localizaai.ui.util.MapViewButton
 import com.localizaai.ui.util.ResetButton
 import com.localizaai.ui.util.SearchBarMain
 import com.localizaai.ui.util.SearchResultList
 import com.localizaai.ui.util.performSearch
+import android.graphics.Color as newColor
 
 
 class MenuActivity : ComponentActivity() {
@@ -285,6 +294,13 @@ fun MenuContent(
     val clickedLatLng by viewModel.clickedLatLng.observeAsState()
     val isSlideDistanceVisible = remember { mutableStateOf(false) }
     val shouldShowHeatMap by viewModel.showHeatMap.collectAsState()
+    val shouldChangeMapView by viewModel.changeMapView.collectAsState()
+
+    val properties = if (shouldChangeMapView) {
+        MapProperties(mapType = MapType.TERRAIN)
+    } else {
+        MapProperties(mapType = MapType.HYBRID)
+    }
 
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
         showPlaceInfoDialog = viewModel.isDialogPlaceOpen.value
@@ -368,18 +384,24 @@ fun MenuContent(
         mutableStateOf<HeatmapTileProvider?>(null)
     }
 
-    LaunchedEffect(viewModel.getHeatmapData()) {
+    val heatmapData by remember { derivedStateOf { viewModel.getHeatmapData() } }
+
+    LaunchedEffect(heatmapData) {
         heatmapTileProvider = HeatmapTileProvider.Builder()
-            .data(viewModel.getHeatmapData())
+            .weightedData(heatmapData)
             .radius(50)
             .opacity(0.4)
             .build()
+
+
     }
+
 
     val specificPlaceResponse = viewModel.specificPlaceList
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
+            properties = properties,
             cameraPositionState = cameraPositionState,
             onMapClick = { latLng ->
 
@@ -469,8 +491,14 @@ fun MenuContent(
         HeatMapButton(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(end = 16.dp, top = 150.dp),
+                .padding(end = 16.dp, top = 170.dp),
             onClick = { viewModel.onHeatMapChange()}
+        )
+        MapViewButton(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 16.dp, top = 250.dp),
+            onClick = { viewModel.onMapViewChange()}
         )
         ResetButton(
             modifier = Modifier

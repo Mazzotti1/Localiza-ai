@@ -30,6 +30,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.common.util.concurrent.RateLimiter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.google.maps.android.heatmaps.WeightedLatLng
 import com.localizaai.Model.Autocomplete
 import com.localizaai.Model.CategoryData
 import com.localizaai.Model.EventsRequest
@@ -107,6 +108,9 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var shouldStopUpdateUserLocation = mutableStateOf(false)
     private val _showHeatMap = MutableStateFlow(false)
     val showHeatMap: StateFlow<Boolean> = _showHeatMap
+    private val _changeMapView = MutableStateFlow(false)
+    val changeMapView: StateFlow<Boolean> = _changeMapView
+
     val shouldMoveCamera = mutableStateOf(true)
     val shouldRegisterUpdate = mutableStateOf(true)
     var shouldMoveCameraToNewDestiny = mutableStateOf(false)
@@ -558,6 +562,11 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         _showHeatMap.value = !_showHeatMap.value
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun onMapViewChange(){
+        _changeMapView.value = !_changeMapView.value
+    }
+
 
     fun getEventsData(){
         val localRequest : String
@@ -648,10 +657,10 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun getHeatmapData(): List<LatLng?> {
+    fun getHeatmapData(): List<WeightedLatLng> {
 
         val fixedPoints = listOf(
-            LatLng(previousLat, previousLong)
+            WeightedLatLng(LatLng(previousLat, previousLong), 0.0)
         )
 
         val threshold = if (isPeakTime()) 0.7 else 0.5
@@ -659,12 +668,19 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         val dynamicPoints = specificPlaceList.map { place ->
             val latitude = place.geocodes?.main?.latitude ?: 0.0
             val longitude = place.geocodes?.main?.longitude ?: 0.0
-            LatLng(latitude, longitude)
+            val score = place.score ?: 0.1
+
+            val adjustedScore = if (score > threshold) {
+                score * 2
+            } else {
+                score * 0.5
+            }
+
+            WeightedLatLng(LatLng(latitude, longitude), adjustedScore)
         }
 
         return fixedPoints + dynamicPoints
     }
-
     @RequiresApi(Build.VERSION_CODES.O)
     private fun saveHistoryPlace(parsedResponse: SpecificPlaceResponse){
 

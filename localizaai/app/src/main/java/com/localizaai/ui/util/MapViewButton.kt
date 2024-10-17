@@ -8,8 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.SolarPower
+import androidx.compose.material.icons.filled.SatelliteAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -19,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun HeatMapButton(
+fun MapViewButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
@@ -32,11 +31,10 @@ fun HeatMapButton(
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            imageVector = Icons.Default.SolarPower,
+            imageVector = Icons.Default.SatelliteAlt,
             contentDescription = "Map Button",
             tint = Color.Gray,
             modifier = Modifier.size(24.dp)
         )
     }
 }
-

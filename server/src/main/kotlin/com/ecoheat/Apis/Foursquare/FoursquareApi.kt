@@ -91,9 +91,10 @@ class FoursquareApi @Autowired constructor(
                     val specificPlace = gson.fromJson(responseBody, SpecificPlaceData::class.java)
 
                     val placeScore = calculatePlaceMovementScore(specificPlace, language)
-
+                    val categoryType = getCategoryType(specificPlace)
                     val updatedPlace = specificPlace.copy(
-                        score = placeScore
+                        score = placeScore,
+                        categoryType = categoryType
                     )
 
                     val modifiedResponseBody = gson.toJson(updatedPlace)
@@ -600,6 +601,14 @@ class FoursquareApi @Autowired constructor(
         return placeScore.coerceAtLeast(0.0)
     }
 
+    fun getCategoryType(place: SpecificPlaceData) : String {
+        val categoryName = place.categories?.firstOrNull()?.name ?: ""
+        return if (categoryName.isNotEmpty()) {
+            placeService!!.getCategoryType(categoryName)
+        } else {
+            ""
+        }
+    }
 }
 
 data class FoursquareResponse(val results: List<FoursquarePlace>)

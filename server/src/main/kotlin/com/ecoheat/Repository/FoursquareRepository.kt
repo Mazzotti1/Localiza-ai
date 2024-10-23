@@ -22,5 +22,16 @@ interface FoursquareRepository : JpaRepository<Category, Long> {
         or c.third_category = :categoryType
     """, nativeQuery = true)
     fun getScoreByCategory(@Param("categoryType") categoryType: String): List<Array<Any>>
+
+    @Query(value = """
+    select 
+	    c.first_category 
+    from category c 
+    where 
+        c.second_category = :categoryName
+        or
+        c.third_category = :categoryName
+    """, nativeQuery = true)
+    fun getCategoryType(@Param("categoryName") categoryName: String) : String
 }
 

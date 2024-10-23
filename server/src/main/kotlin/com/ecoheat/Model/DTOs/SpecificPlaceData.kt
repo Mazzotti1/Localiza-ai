@@ -12,6 +12,7 @@ data class SpecificPlaceData(
     val related_places: RelatedPlaces? = null,
     val timezone: String? = null,
     var score: Double? = null,
+    var categoryType: String? = null,
     val type : String? = null
 )
 

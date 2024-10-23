@@ -19,6 +19,7 @@ data class SpecificPlaceResponse(
     val related_places: RelatedPlaces? = null,
     val timezone: String = "",
     val score : Double = 0.0,
+    var categoryType: String = "",
     val type : String = ""
 )
 

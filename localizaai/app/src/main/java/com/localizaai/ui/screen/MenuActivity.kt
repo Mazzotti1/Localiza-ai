@@ -366,14 +366,8 @@ fun MenuContent(
         mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
     }
 
-    val customIconPlace by remember {
-        val iconMaker = com.localizaai.R.drawable.pin_marker_medium
-        val customIconBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, iconMaker)
-        mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
-    }
-
     val customMatchedIconPlace by remember {
-        val iconMaker = com.localizaai.R.drawable.pin_marker_matched_medium
+        val iconMaker = com.localizaai.R.drawable.pin_marker_selected
         val customIconBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, iconMaker)
         mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
     }
@@ -429,7 +423,7 @@ fun MenuContent(
             )
 
             clickedLatLng?.let {
-                AnimatedCircle(position = LatLng(it.first, it.second))
+                AnimatedCircle(position = LatLng(it.first, it.second), maxRepeats = 3)
             }
 
             if (shouldShowHeatMap && heatmapTileProvider != null) {
@@ -448,7 +442,8 @@ fun MenuContent(
                     val icon: BitmapDescriptor = if (selectedPlace == place.name) {
                         customMatchedIconPlace
                     } else {
-                        customIconPlace
+                        val icon = viewModel.customIconByCategory(place)
+                        icon
                     }
 
                     placeLatLng?.let { MarkerState(position = it) }?.let {

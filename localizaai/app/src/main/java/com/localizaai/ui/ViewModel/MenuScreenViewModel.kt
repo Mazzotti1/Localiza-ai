@@ -3,6 +3,8 @@ package com.localizaai.ui.ViewModel
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.location.Geocoder
 import android.location.Location
 import android.os.Build
@@ -12,6 +14,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.core.app.ActivityCompat
@@ -26,6 +29,8 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.common.util.concurrent.RateLimiter
 import com.google.gson.Gson
@@ -44,6 +49,7 @@ import com.localizaai.Model.Traffic
 import com.localizaai.Model.TrafficResponse
 import com.localizaai.Model.Weather
 import com.localizaai.Model.WeatherResponse
+import com.localizaai.R
 import com.localizaai.data.repository.EventsRepository
 import com.localizaai.data.repository.HistoryRespository
 import com.localizaai.data.repository.PlacesRepository
@@ -770,6 +776,30 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     fun isPeakTime(): Boolean {
         val currentHour = LocalTime.now().hour
         return currentHour in 11..13 || currentHour in 18..20
+    }
+
+    fun customIconByCategory(place: SpecificPlaceResponse) : BitmapDescriptor{
+        val categoryType = place.categoryType
+        var icon : Int = 0
+
+        when(categoryType){
+            "Landmarks and Outdoors" -> icon = R.drawable.pin_marker_sports
+            "Retail" -> icon = R.drawable.pin_marker_market
+            "Business and Professional Services" -> icon = R.drawable.pin_marker_work
+            "Sports and Recreation" -> icon = R.drawable.pin_marker_sports
+            "Community and Government" -> icon = R.drawable.pin_marker_work
+            "Dining and Drinking" -> icon = R.drawable.pin_marker_food
+            "Event" -> icon = R.drawable.pin_marker_events
+            "Health and Medicine" -> icon = R.drawable.pin_marker_health
+            "Arts and Entertainment" -> icon = R.drawable.pin_marker_art
+            "Travel and Transportation" -> icon = R.drawable.pin_marker_travel
+            else -> icon = R.drawable.pin_marker_medium
+        }
+
+            val customIconBitmap: Bitmap = BitmapFactory.decodeResource(context.resources, icon)
+            val customMatchedIconPlace = BitmapDescriptorFactory.fromBitmap(customIconBitmap)
+
+        return  customMatchedIconPlace
     }
 }
 

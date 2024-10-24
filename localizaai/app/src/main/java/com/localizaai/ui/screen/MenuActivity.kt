@@ -1,6 +1,7 @@
 package com.localizaai.ui.screen
 
 import PlaceModal
+import PlaceModalLoading
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -102,6 +104,7 @@ import com.google.maps.android.compose.rememberMarkerState
 import com.google.maps.android.heatmaps.Gradient
 import com.google.maps.android.heatmaps.HeatmapTileProvider
 import com.localizaai.Model.SpecificPlaceResponse
+import com.localizaai.R
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import com.localizaai.ui.util.AnimatedCircle
 import com.localizaai.ui.util.FilterButton
@@ -322,6 +325,7 @@ fun MenuContent(
                 if (shouldMoveCameraToNewDestiny) {
                     newLatLng?.let {
                         cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(it, 16f))
+                        viewModel.isLoadingSearch = false
                     }
                     viewModel.shouldMoveCameraToNewDestiny.value = false
                 }
@@ -372,7 +376,22 @@ fun MenuContent(
         mutableStateOf(BitmapDescriptorFactory.fromBitmap(customIconBitmap))
     }
 
-    
+
+    val iconMap = remember {
+        mapOf(
+            "Landmarks and Outdoors" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_sports),
+            "Retail" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_market),
+            "Business and Professional Services" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_work),
+            "Sports and Recreation" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_sports),
+            "Community and Government" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_work),
+            "Dining and Drinking" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_food),
+            "Event" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_events),
+            "Health and Medicine" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_health),
+            "Arts and Entertainment" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_art),
+            "Travel and Transportation" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_travel),
+            "default" to BitmapDescriptorFactory.fromResource(R.drawable.pin_marker_medium)
+        )
+    }
 
     var heatmapTileProvider by remember {
         mutableStateOf<HeatmapTileProvider?>(null)
@@ -399,7 +418,7 @@ fun MenuContent(
             cameraPositionState = cameraPositionState,
             onMapClick = { latLng ->
 
-                if(isSlideDistanceVisible.value == false && viewModel.isDialogPlaceOpen.value == false && isFocused == false){
+                if(!isSlideDistanceVisible.value && !viewModel.isDialogPlaceOpen.value && !isFocused){
                     viewModel.updateClickedLatLng(latLng.latitude, latLng.longitude)
                 }
 
@@ -437,15 +456,13 @@ fun MenuContent(
                             LatLng(it, it1)
                         }
                     }
+                    val icon: BitmapDescriptor
 
-
-                    val icon: BitmapDescriptor = if (selectedPlace == place.name) {
-                        customMatchedIconPlace
+                    if(selectedPlace == place.name) {
+                        icon = customMatchedIconPlace
                     } else {
-                        val icon = viewModel.customIconByCategory(place)
-                        icon
+                        icon = (iconMap[place.categoryType] ?: iconMap["default"])!!
                     }
-
                     placeLatLng?.let { MarkerState(position = it) }?.let {
                         Marker(
                             state = it,
@@ -463,6 +480,7 @@ fun MenuContent(
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
+                .padding(top = 12.dp)
         ) {
             Spacer(modifier = Modifier.height(64.dp))
             SearchBarMain(
@@ -480,6 +498,25 @@ fun MenuContent(
                 SearchResultList(context, autocompletePlaces, viewModel)
             }
         }
+        if(viewModel.isLoadingPlaceInfo){
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                PlaceModalLoading()
+            }
+        }
+
+        if(viewModel.isLoadingSearch){
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+
         if (showPlaceInfoDialog) {
             viewModel.infosPlaceResponse?.let { PlaceModal(onDismiss = { viewModel.isDialogPlaceOpen.value = false }, placeInfo = it) }
         }

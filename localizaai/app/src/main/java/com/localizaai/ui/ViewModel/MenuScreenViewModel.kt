@@ -63,6 +63,7 @@ import kotlinx.coroutines.launch
 
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -138,8 +139,8 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     private var locationCallback: LocationCallback? = null
     var isHoliday = mutableStateOf(false)
-
-
+    var isLoadingPlaceInfo by mutableStateOf(false)
+    var isLoadingSearch by mutableStateOf(false)
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -391,29 +392,35 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    fun getAllPlaceInfo(name : String, lat: String, long : String){
-        try {
-            viewModelScope.launch(Dispatchers.IO) {
-                val result = placesRepository.fetchPlaceByNameData(lat,long,name)
+    fun getAllPlaceInfo(name: String, lat: String, long: String) {
+        viewModelScope.launch {
+            isLoadingPlaceInfo = true
 
-                result.onSuccess { responseBody ->
+            try {
+                withContext(Dispatchers.IO) {
+                    val result = placesRepository.fetchPlaceByNameData(lat, long, name)
 
-                    val infosPlaceJson = responseBody.toString()
-                    val gson = Gson()
-                    val parsedResponse = gson.fromJson(infosPlaceJson, PlaceInfo::class.java)
+                    result.onSuccess { responseBody ->
+                        val infosPlaceJson = responseBody.toString()
+                        val gson = Gson()
+                        val parsedResponse = gson.fromJson(infosPlaceJson, PlaceInfo::class.java)
 
-                    infosPlaceResponse = parsedResponse
-                    isDialogPlaceOpen.value = true
+                        infosPlaceResponse = parsedResponse
+                        isDialogPlaceOpen.value = true
 
-                    Log.d("PlacesApi", "Resultado da consulta das informações do lugar: $infosPlaceResponse")
-                }.onFailure { exception ->
-                    Log.d("PlacesApi", "Error: ${exception.message}")
+                        Log.d("PlacesApi", "Resultado da consulta das informações do lugar: $infosPlaceResponse")
+                    }.onFailure { exception ->
+                        Log.d("PlacesApi", "Error: ${exception.message}")
+                    }
                 }
+            } catch (e: Throwable) {
+                Log.d("PlacesApi", "Error: ${e.message}")
+            } finally {
+                isLoadingPlaceInfo = false
             }
-        }catch(e: Throwable){
-            Log.d("PlacesApi", "Error: ${e}")
         }
     }
+
 
     fun freeCacheData(){
         if(specificPlaceList.isNotEmpty()){
@@ -491,6 +498,8 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         newLatLng.value = LatLng(latDouble, longDouble)
         showSearchListItens.value = false
         shouldMoveCameraToNewDestiny.value = true
+
+        isLoadingSearch = true
     }
 
     private fun compareCamItemdistance(nextLat : Double, nextLong : Double) : Boolean{
@@ -780,7 +789,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
     fun customIconByCategory(place: SpecificPlaceResponse) : BitmapDescriptor{
         val categoryType = place.categoryType
-        var icon : Int = 0
+        var icon : Int = R.drawable.pin_marker_sports
 
         when(categoryType){
             "Landmarks and Outdoors" -> icon = R.drawable.pin_marker_sports

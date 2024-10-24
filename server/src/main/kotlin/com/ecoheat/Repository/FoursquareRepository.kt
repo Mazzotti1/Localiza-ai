@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.util.*
 
 
 @Repository
@@ -24,7 +25,7 @@ interface FoursquareRepository : JpaRepository<Category, Long> {
     fun getScoreByCategory(@Param("categoryType") categoryType: String): List<Array<Any>>
 
     @Query(value = """
-    select 
+    select distinct
 	    c.first_category 
     from category c 
     where 
@@ -32,6 +33,6 @@ interface FoursquareRepository : JpaRepository<Category, Long> {
         or
         c.third_category = :categoryName
     """, nativeQuery = true)
-    fun getCategoryType(@Param("categoryName") categoryName: String) : String
+    fun getCategoryType(@Param("categoryName") categoryName: String) : Optional<String>
 }
 

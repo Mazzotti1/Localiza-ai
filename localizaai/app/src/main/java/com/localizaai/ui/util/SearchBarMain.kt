@@ -82,7 +82,7 @@ fun SearchBarMain(
                     onSearch(newText)
                 },
                 placeholder = {
-                    Text(text = stringResource(id = R.string.search), fontSize = 16.sp)
+                    Text(text = stringResource(id = R.string.search), fontSize = 12.sp)
                 },
                 leadingIcon = {
                     Icon(
@@ -92,7 +92,7 @@ fun SearchBarMain(
                 },
                 modifier = Modifier
                     .weight(1f)
-                    .padding(top = 12.dp)
+                    .height(60.dp)
                     .border(0.8.dp, Color.Black, RoundedCornerShape(16.dp))
                     .focusRequester(focusRequester)
                     .onFocusChanged { focusState ->

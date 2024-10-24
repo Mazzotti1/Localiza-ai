@@ -265,15 +265,13 @@ class FoursquareServiceImpl @Autowired constructor(
     }
 
     fun getCategoryType(categoryName: String): String {
-        try {
-            val categoryType = repository.getCategoryType(categoryName)
-
-            return categoryType
+        return try {
+            repository.getCategoryType(categoryName).orElse("")
         } catch (ex: RegistroIncorretoException) {
             val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
             future.completeExceptionally(Exception(errorMessage, ex))
+            ""
         }
-        return ""
     }
 
     override fun getAutocompletePlaces(search: String, lat: String, long : String): CompletableFuture<String> {

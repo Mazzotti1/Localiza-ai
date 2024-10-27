@@ -22,7 +22,10 @@ fun AnimatedCircle(position: LatLng, maxRepeats: Int) {
     var isAnimating by remember { mutableStateOf(true) }
     val radius = remember { Animatable(10f) }
 
-    LaunchedEffect(isAnimating) {
+    LaunchedEffect(position) {
+        currentRepeat = 0
+        isAnimating = true
+
         while (isAnimating && currentRepeat < maxRepeats) {
             radius.animateTo(
                 targetValue = 80f,
@@ -34,7 +37,7 @@ fun AnimatedCircle(position: LatLng, maxRepeats: Int) {
             )
             currentRepeat++
         }
-        isAnimating = false // Parar a animação quando o número máximo de repetições for atingido
+        isAnimating = false
     }
 
     if (isAnimating) {
@@ -47,5 +50,6 @@ fun AnimatedCircle(position: LatLng, maxRepeats: Int) {
         )
     }
 }
+
 
 

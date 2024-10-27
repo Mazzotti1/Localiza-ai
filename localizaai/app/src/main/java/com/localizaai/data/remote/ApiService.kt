@@ -92,4 +92,21 @@ interface ApiService {
     suspend fun getCategoriesScore(
         @Query("categoryType") categoryType : String
     ) : Response<ResponseBody>
+
+    @GET("https://api.mapbox.com/search/searchbox/v1/suggest")
+    suspend fun getMapBoxAutocomplete(
+        @Query("q") query: String,
+        @Query("limit") limit: Int,
+        @Query("session_token") sessionToken: String,
+        @Query("access_token") apiToken: String
+    ): Response<ResponseBody>
+
+    @GET("https://api.mapbox.com/search/searchbox/v1/forward")
+    suspend fun getMapBoxSelectedData(
+        @Query("q") query: String,
+        @Query("limit") limit: Int,
+        @Query("access_token") apiToken: String
+    ) : Response<ResponseBody>
+
 }
+

@@ -15,7 +15,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ControlPoint
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.FlagCircle
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SouthAmerica
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -39,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.localizaai.Model.Autocomplete
 import com.localizaai.Model.AutocompleteResult
+import com.localizaai.Model.Suggestion
+import com.localizaai.Model.SuggestionResponse
 import com.localizaai.R
 import com.localizaai.ui.ViewModel.MenuScreenViewModel
 
@@ -92,7 +99,7 @@ fun SearchBarMain(
                 },
                 modifier = Modifier
                     .weight(1f)
-                    .height(60.dp)
+                    .height(55.dp)
                     .border(0.8.dp, Color.Black, RoundedCornerShape(16.dp))
                     .focusRequester(focusRequester)
                     .onFocusChanged { focusState ->
@@ -136,22 +143,64 @@ fun SearchBarMain(
 }
 
 @Composable
-fun SearchResultList(context : Context, autocomplete: Autocomplete?, viewModel: MenuScreenViewModel) {
-    val items = autocomplete?.results ?: emptyList()
+fun SearchResultList(context : Context, autocomplete: SuggestionResponse?, autocompletePlaces: Autocomplete?, viewModel: MenuScreenViewModel) {
+    val itemsGeneral = autocomplete?.suggestions ?: emptyList()
+    val itemsPlaces = autocompletePlaces?.results?: emptyList()
+    val displayedNames = mutableSetOf<String>()
+
     LazyColumn(
         modifier = Modifier
             .widthIn(max = 400.dp)
             .heightIn(max = 200.dp)
             .background(Color.White)
     ) {
-        items(items) { item ->
-            SearchResultItem(context, item, viewModel)
+        items(itemsGeneral) {itemGeneral ->
+            SearchResultItem(context, itemGeneral, viewModel)
+        }
+        items(itemsPlaces) { itemPlace ->
+            if (displayedNames.add(itemPlace.text.primary!!)) {
+                SearchResultItemPlace(context, itemPlace, viewModel)
+            }
         }
     }
 }
 
 @Composable
-fun SearchResultItem(context : Context, item: AutocompleteResult, viewModel: MenuScreenViewModel) {
+fun SearchResultItem(context : Context, item: Suggestion, viewModel: MenuScreenViewModel) {
+
+    val itemName = item.name
+    Card(
+        shape = RoundedCornerShape(0.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                viewModel.getMapBoxSelectedData(context, itemName)
+            }
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Filled.SouthAmerica,
+                contentDescription = "Sinalization Icon",
+                tint = Color.Blue,
+                modifier = Modifier
+                    .padding(start = 10.dp)
+            )
+            Text(
+                text = item.name ?: "",
+                modifier = Modifier
+                    .padding(16.dp),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+    }
+}
+
+@Composable
+fun SearchResultItemPlace(context : Context, item: AutocompleteResult, viewModel: MenuScreenViewModel) {
 
     val lat = item.place?.geocodes?.main?.latitude?.toString() ?: ""
     val long = item.place?.geocodes?.main?.longitude?.toString() ?: ""
@@ -168,15 +217,30 @@ fun SearchResultItem(context : Context, item: AutocompleteResult, viewModel: Men
                 }
             }
     ) {
-        Text(
-            text = item.text.primary ?: "" ,
-            modifier = Modifier
-                .padding(16.dp),
-            style = MaterialTheme.typography.labelLarge
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ){
+            Icon(
+                imageVector = Icons.Filled.FlagCircle,
+                contentDescription = "Sinalization Icon",
+                tint = Color.Green,
+                modifier = Modifier
+                    .padding(start = 10.dp)
+            )
+            Text(
+                text = item.text.primary ?: "" ,
+                modifier = Modifier
+                    .padding(16.dp),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+
     }
 }
 
 fun performSearch(query: String, viewModel:MenuScreenViewModel) {
+    viewModel.getMapBoxAutocompletes(query)
     viewModel.onSearch(query)
 }
+

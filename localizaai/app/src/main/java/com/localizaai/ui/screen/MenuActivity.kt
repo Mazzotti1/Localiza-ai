@@ -3,6 +3,7 @@ package com.localizaai.ui.screen
 import PlaceModal
 import PlaceModalLoading
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -18,6 +19,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -91,9 +93,6 @@ import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.PointOfInterest
-import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
@@ -103,23 +102,27 @@ import com.google.maps.android.compose.TileOverlay
 import com.google.maps.android.compose.rememberMarkerState
 import com.google.maps.android.heatmaps.Gradient
 import com.google.maps.android.heatmaps.HeatmapTileProvider
+import com.localizaai.Model.Autocomplete
 import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.R
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import com.localizaai.ui.util.AnimatedCircle
 import com.localizaai.ui.util.FilterButton
 import com.localizaai.ui.util.HeatMapButton
+import com.localizaai.ui.util.MapHideButton
 import com.localizaai.ui.util.MapViewButton
 import com.localizaai.ui.util.ResetButton
 import com.localizaai.ui.util.SearchBarMain
+import com.localizaai.ui.util.SearchModalLoading
 import com.localizaai.ui.util.SearchResultList
 import com.localizaai.ui.util.performSearch
-import android.graphics.Color as newColor
+
 
 
 class MenuActivity : ComponentActivity() {
 
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -287,6 +290,7 @@ fun MenuContent(
 
     var showPlaceInfoDialog by remember { mutableStateOf(false) }
     val autocompletePlaces by viewModel.autocompletePlaces
+    val mapBoxAutocompletePlaces = viewModel.mapboxAutocompleteResponse
     var showSearchListItens by viewModel.showSearchListItens
     var isFocused by remember { mutableStateOf(false) }
     val shouldMoveCamera by viewModel.shouldMoveCamera
@@ -298,6 +302,8 @@ fun MenuContent(
     val isSlideDistanceVisible = remember { mutableStateOf(false) }
     val shouldShowHeatMap by viewModel.showHeatMap.collectAsState()
     val shouldChangeMapView by viewModel.changeMapView.collectAsState()
+    val shouldChangeHideView by viewModel.changeHideView.collectAsState()
+
 
     val properties = if (shouldChangeMapView) {
         MapProperties(mapType = MapType.TERRAIN)
@@ -477,27 +483,30 @@ fun MenuContent(
                 }
             }
         }
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 12.dp)
-        ) {
-            Spacer(modifier = Modifier.height(64.dp))
-            SearchBarMain(
-                viewModel,
-                onSearch = { query ->
-                    performSearch(query, viewModel)
-                },
-                isFocused = isFocused,
-                onFocusChanged = {
-                    isFocused = it
+        if(!shouldChangeHideView){
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 12.dp)
+            ) {
+                Spacer(modifier = Modifier.height(64.dp))
+                SearchBarMain(
+                    viewModel,
+                    onSearch = { query ->
+                        performSearch(query, viewModel)
+                    },
+                    isFocused = isFocused,
+                    onFocusChanged = {
+                        isFocused = it
+                    }
+                )
+                if (mapBoxAutocompletePlaces != null && autocompletePlaces != null && showSearchListItens) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    SearchResultList(context, mapBoxAutocompletePlaces, autocompletePlaces,viewModel)
                 }
-            )
-            if (autocompletePlaces != null && showSearchListItens) {
-                Spacer(modifier = Modifier.height(2.dp))
-                SearchResultList(context, autocompletePlaces, viewModel)
             }
         }
+
         if(viewModel.isLoadingPlaceInfo){
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -512,7 +521,7 @@ fun MenuContent(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                SearchModalLoading()
             }
         }
 
@@ -520,36 +529,55 @@ fun MenuContent(
         if (showPlaceInfoDialog) {
             viewModel.infosPlaceResponse?.let { PlaceModal(onDismiss = { viewModel.isDialogPlaceOpen.value = false }, placeInfo = it) }
         }
-        HeatMapButton(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 16.dp, top = 170.dp),
-            onClick = { viewModel.onHeatMapChange()}
-        )
-        MapViewButton(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 16.dp, top = 250.dp),
-            onClick = { viewModel.onMapViewChange()}
-        )
-        ResetButton(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 16.dp, bottom = 78.dp)
+        if(!shouldChangeHideView){
+            HeatMapButton(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 16.dp, top = 170.dp),
+                onClick = { viewModel.onHeatMapChange()}
+            )
+            MapViewButton(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 16.dp, top = 250.dp),
+                onClick = { viewModel.onMapViewChange()}
+            )
+            ResetButton(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 16.dp, bottom = 78.dp)
 
-        ) {
-            val currentLatLng = viewModel.onResetButtonClick()
-            cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
+            ) {
+                val currentLatLng = viewModel.onResetButtonClick()
+                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
+            }
+            FilterButton(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp)
+                    .padding(bottom = 78.dp),
+                onClick = { isSlideDistanceVisible.value = !isSlideDistanceVisible.value },
+                isVisible = isSlideDistanceVisible.value,
+                viewModel
+            )
         }
-        FilterButton(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp)
-                .padding(bottom = 78.dp),
-            onClick = { isSlideDistanceVisible.value = !isSlideDistanceVisible.value },
-            isVisible = isSlideDistanceVisible.value,
-            viewModel
-        )
+
+        if(!shouldChangeHideView){
+            MapHideButton(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 16.dp, top = 330.dp),
+                onClick = { viewModel.onMapHideChange()}
+            )
+        }else {
+            MapHideButton(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 16.dp, top = 100.dp),
+                onClick = { viewModel.onMapHideChange()}
+            )
+        }
+
     }
 
 }

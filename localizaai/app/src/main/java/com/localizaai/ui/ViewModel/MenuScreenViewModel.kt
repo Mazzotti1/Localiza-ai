@@ -39,12 +39,14 @@ import com.google.maps.android.heatmaps.WeightedLatLng
 import com.localizaai.Model.Autocomplete
 import com.localizaai.Model.CategoryData
 import com.localizaai.Model.EventsRequest
+import com.localizaai.Model.FeatureCollection
 import com.localizaai.Model.HistoryRequest
 import com.localizaai.Model.HistoryResponse
 import com.localizaai.Model.PlaceInfo
 import com.localizaai.Model.PlaceRequest
 import com.localizaai.Model.ScoreCategoryResponse
 import com.localizaai.Model.SpecificPlaceResponse
+import com.localizaai.Model.SuggestionResponse
 import com.localizaai.Model.Traffic
 import com.localizaai.Model.TrafficResponse
 import com.localizaai.Model.Weather
@@ -52,6 +54,7 @@ import com.localizaai.Model.WeatherResponse
 import com.localizaai.R
 import com.localizaai.data.repository.EventsRepository
 import com.localizaai.data.repository.HistoryRespository
+import com.localizaai.data.repository.MapboxRepository
 import com.localizaai.data.repository.PlacesRepository
 import com.localizaai.data.repository.TrafficRepository
 import com.localizaai.data.repository.WeatherRepository
@@ -93,6 +96,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private val weatherRepository = WeatherRepository(context)
     private val trafficRepository = TrafficRepository(context)
     private val historyRepository = HistoryRespository(context)
+    private val mapboxRepository = MapboxRepository(context)
 
     var placesResponse by mutableStateOf<List<PlaceRequest>?>(null)
     var specificPlaceResponse by mutableStateOf<SpecificPlaceResponse?>(null)
@@ -118,6 +122,9 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     private val _changeMapView = MutableStateFlow(false)
     val changeMapView: StateFlow<Boolean> = _changeMapView
 
+    private val _changeHideView = MutableStateFlow(false)
+    val changeHideView: StateFlow<Boolean> = _changeHideView
+
     val shouldMoveCamera = mutableStateOf(true)
     val shouldRegisterUpdate = mutableStateOf(true)
     var shouldMoveCameraToNewDestiny = mutableStateOf(false)
@@ -136,6 +143,8 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var trafficResponse by mutableStateOf<TrafficResponse?>(null)
     var eventsResponse by mutableStateOf<List<EventsRequest>>(emptyList())
     var historyResponse by mutableStateOf<HistoryResponse?>(null)
+    var mapboxAutocompleteResponse by mutableStateOf<SuggestionResponse?>(null)
+    var mapboxSelectedDataResponse by mutableStateOf<FeatureCollection?>(null)
 
     private var locationCallback: LocationCallback? = null
     var isHoliday = mutableStateOf(false)
@@ -582,6 +591,10 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         _changeMapView.value = !_changeMapView.value
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun onMapHideChange(){
+        _changeHideView.value = !_changeHideView.value
+    }
 
     fun getEventsData(){
         val localRequest : String
@@ -809,6 +822,70 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             val customMatchedIconPlace = BitmapDescriptorFactory.fromBitmap(customIconBitmap)
 
         return  customMatchedIconPlace
+    }
+
+    fun getMapBoxAutocompletes(query:String){
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = mapboxRepository.fetchMapBoxAutocompletes(query)
+
+            result.onSuccess { responseBody ->
+
+                val mapBoxAutocomplete = responseBody.toString()
+                val gson = Gson()
+                mapboxAutocompleteResponse = gson.fromJson(mapBoxAutocomplete, SuggestionResponse::class.java)
+
+                Log.d("MapBoxApi", "Resultado do autocomplete é: ${result.toString()}")
+            }.onFailure { exception ->
+                Log.d("MapBoxApi", "Error: ${exception.message}")
+            }
+            if(mapboxAutocompleteResponse?.suggestions!!.isEmpty()){
+                showSearchListItens.value = false
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getMapBoxSelectedData(context: Context, query:String){
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = mapboxRepository.fetchMapBoxPlaceData(query)
+
+            result.onSuccess { responseBody ->
+
+                val mapBoxSelectedData = responseBody.toString()
+                val gson = Gson()
+                mapboxSelectedDataResponse = gson.fromJson(mapBoxSelectedData, FeatureCollection::class.java)
+
+                onSelectGeneralSearchListItem(context)
+
+                Log.d("MapBoxApi", "Resultado do local selecionado é: ${result.toString()}")
+            }.onFailure { exception ->
+                Log.d("MapBoxApi", "Error: ${exception.message}")
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun onSelectGeneralSearchListItem(context: Context){
+        val data = mapboxSelectedDataResponse
+        val cordinates = data!!.features[0].properties.coordinates
+        val latDouble = cordinates.latitude
+        val longDouble = cordinates.longitude
+
+        val shouldCamFreeCache = compareCamItemdistance(latDouble,longDouble)
+
+        if(shouldCamFreeCache){
+            freeCacheData()
+            shouldStopUpdateUserLocation.value = true
+        }
+
+        val location = createLocation(latDouble,longDouble)
+        loadPlacesAround(context, location)
+
+        newLatLng.value = LatLng(latDouble, longDouble)
+        showSearchListItens.value = false
+        shouldMoveCameraToNewDestiny.value = true
+
+        isLoadingSearch = true
     }
 }
 

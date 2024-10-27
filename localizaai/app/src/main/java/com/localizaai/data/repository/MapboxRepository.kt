@@ -1,0 +1,62 @@
+package com.localizaai.data.repository
+
+import android.content.Context
+import android.util.Log
+import com.localizaai.R
+import com.localizaai.data.remote.ApiService
+import com.localizaai.data.remote.NetworkClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+
+class MapboxRepository(private val context: Context) {
+    private val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+    private val apiService: ApiService
+    private val mapboxAuthToken = context.getString(R.string.mapbox_api)
+    init {
+        apiService = NetworkClient.create(context, getAuthToken())
+    }
+
+    private fun getAuthToken(): String {
+        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("jwtToken", "") ?: ""
+    }
+
+    suspend fun fetchMapBoxAutocompletes(query: String): Result<String> {
+        return try {
+            val response = withContext(Dispatchers.IO) {
+                apiService.getMapBoxAutocomplete(query,1,"[GENERATED-UUID]",mapboxAuthToken)
+            }
+
+            if (response.isSuccessful) {
+                val responseBody = response.body()?.string()
+                Result.success(responseBody ?: "")
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Result.failure(Exception(errorBody ?: "Erro inesperado no MapBox autocomplete"))
+            }
+        } catch (e: Exception) {
+            Log.d("MapBox", "Erro ao fazer a requisição: $e")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun fetchMapBoxPlaceData(query: String): Result<String> {
+        return try {
+            val response = withContext(Dispatchers.IO) {
+                apiService.getMapBoxSelectedData(query,1,mapboxAuthToken)
+            }
+
+            if (response.isSuccessful) {
+                val responseBody = response.body()?.string()
+                Result.success(responseBody ?: "")
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Result.failure(Exception(errorBody ?: "Erro inesperado no MapBox selected place data"))
+            }
+        } catch (e: Exception) {
+            Log.d("MapBox", "Erro ao fazer a requisição: $e")
+            Result.failure(e)
+        }
+    }
+}

@@ -23,9 +23,18 @@ data class Users(
 
     @Column(name = "isActive", nullable = false)
     var isActive: Boolean
-) {
+)  {
+    constructor() : this(
+        0L,
+        "",
+        "",
+        Roles(0, ""),
+        null,
+        true
+    )
+
     companion object {
         const val DEFAULT_ROLE_ID: Long = 1
-        }
+    }
 }
 

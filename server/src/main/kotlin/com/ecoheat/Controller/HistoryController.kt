@@ -35,7 +35,7 @@ class HistoryController(private val messageSource: MessageSource) {
 
     }
 
-    @GetMapping("location")
+    @GetMapping("/location")
     fun getHistoryByLocation (
         @RequestParam latitude: Double,
         @RequestParam longitude: Double,

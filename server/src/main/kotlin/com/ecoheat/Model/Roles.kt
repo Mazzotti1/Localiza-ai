@@ -12,4 +12,9 @@ data class Roles(
 
     @Column(nullable = false)
     val name: String
-)
+){
+    constructor() : this(
+        0L,
+        ""
+    )
+}

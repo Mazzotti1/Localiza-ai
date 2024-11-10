@@ -39,4 +39,17 @@ data class History (
 
     @Column(name = "traffic_id", nullable = false)
     var trafficId: Long
-)
+){
+    constructor() : this(
+        null,
+        "",
+        0L,
+        "",
+        0.0,
+        0.0,
+        0L,
+        true,
+        0L,
+        0L
+    )
+}

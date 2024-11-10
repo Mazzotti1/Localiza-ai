@@ -29,7 +29,7 @@ class SecurityConfig{
     val routeD = dotenv["ROUTE_D"]!!
     val routeE = dotenv["ROUTE_E"]!!
     val routeF = dotenv["ROUTE_F"]!!
-    val routeG = dotenv["ROUTE_F"]!!
+    val routeG = dotenv["ROUTE_G"]!!
     val routeH = dotenv["ROUTE_H"]!!
     val routeJ = dotenv["ROUTE_J"]!!
     val routeK = dotenv["ROUTE_K"]!!
@@ -39,9 +39,9 @@ class SecurityConfig{
     val routeO = dotenv["ROUTE_O"]!!
     val routeP = dotenv["ROUTE_P"]!!
     val routeQ = dotenv["ROUTE_Q"]!!
-    val routeR = dotenv["ROUTE_Q"]!!
+    val routeR = dotenv["ROUTE_R"]!!
     val routeS = dotenv["ROUTE_S"]!!
-    val routeT = dotenv["ROUTE_S"]!!
+    val routeT = dotenv["ROUTE_T"]!!
     @Bean
     fun encoder(): PasswordEncoder? {
         return BCryptPasswordEncoder()
@@ -56,20 +56,20 @@ class SecurityConfig{
     fun filterChain(http: HttpSecurity, messageSource: MessageSource, userService: UserServiceImpl): SecurityFilterChain {
         http {
             authorizeRequests {
-                authorize(routeA, hasRole("ADMIN"))
+                authorize(routeA, permitAll)
                 authorize(routeB, permitAll)
                 authorize(routeC, permitAll)
                 authorize(routeD, hasRole("USER"))
                 authorize(routeE, hasRole("USER"))
                 authorize(routeF, hasRole("USER"))
                 authorize(routeG, hasRole("USER"))
-                authorize(routeC, permitAll)
-                authorize(routeJ, permitAll)
-                authorize(routeK, permitAll)
+                authorize(routeH, hasRole("USER"))
+                authorize(routeJ, hasRole("USER"))
+                authorize(routeK, hasRole("USER"))
                 authorize(routeL, hasRole("USER"))
                 authorize(routeM, hasRole("USER"))
                 authorize(routeN, hasRole("USER"))
-                authorize(routeO, permitAll)
+                authorize(routeO, hasRole("USER"))
                 authorize(routeP, hasRole("USER"))
                 authorize(routeQ, hasRole("USER"))
                 authorize(routeR, hasRole("USER"))

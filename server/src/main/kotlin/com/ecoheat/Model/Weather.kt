@@ -23,5 +23,13 @@ data class Weather (
 
     @Column(name="rain_chance", nullable = false)
     val rainChance : Int,
-)
+){
+    constructor() : this(
+        0L,
+        "",
+        "",
+        "",
+        0
+    )
+}
 

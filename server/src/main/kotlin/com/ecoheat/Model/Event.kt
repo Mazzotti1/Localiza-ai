@@ -35,4 +35,17 @@ data class Event (
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean
-)
+){
+    constructor() : this(
+        0L,
+        "",
+        "",
+        0.0,
+        0.0,
+        "",
+        "",
+        0L,
+        false
+    )
+}
+

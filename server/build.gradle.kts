@@ -5,10 +5,10 @@ plugins {
 	id("io.spring.dependency-management") version "1.1.4"
 	kotlin("jvm") version "1.9.22"
 	kotlin("plugin.spring") version "1.9.22"
-	kotlin("plugin.jpa") version "1.9.22"
 }
 
-group = "com"
+
+group = "com.ecoheat"
 version = "0.0.1-SNAPSHOT"
 
 java {
@@ -29,7 +29,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-jdbc")
 	implementation("org.springframework.boot:spring-boot-starter-security")
-	implementation ("io.jsonwebtoken:jjwt-api:0.11.5")
+	implementation("io.jsonwebtoken:jjwt-api:0.11.5")
 	implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
 	implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
 	implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
@@ -46,7 +46,8 @@ dependencies {
 	testImplementation("org.springframework.security:spring-security-test")
 	implementation("com.squareup.okhttp3:okhttp:4.9.3")
 	implementation("com.google.code.gson:gson:2.8.8")
-	implementation ("org.hibernate:hibernate-spatial:6.1.0.Final")
+	implementation("org.hibernate.orm:hibernate-core:6.4.1.Final")
+	implementation("org.jboss.logging:jboss-logging:3.4.3.Final")
 }
 
 tasks.withType<KotlinCompile> {
@@ -59,3 +60,9 @@ tasks.withType<KotlinCompile> {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
+tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
+	archiveBaseName.set("ecoheat")
+}
+
+

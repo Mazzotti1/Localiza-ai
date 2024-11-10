@@ -28,4 +28,15 @@ data class Traffic (
 
     @Column(name="road_closure", nullable = false)
     val roadClosure : Boolean,
-)
+){
+    constructor() : this(
+        0L,
+        0,
+        0,
+        0,
+        0,
+        0.0,
+        false
+    )
+}
+

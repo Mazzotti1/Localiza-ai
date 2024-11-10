@@ -25,5 +25,15 @@ data class Category (
 
     @Column(name="type", nullable = false)
     val type: String
-)
+){
+    constructor() : this(
+        0L,
+        "",
+        "",
+        "",
+        0.0,
+        ""
+    )
+}
+
 

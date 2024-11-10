@@ -691,14 +691,16 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             WeightedLatLng(LatLng(previousLat, previousLong), 0.0)
         )
 
-        val threshold = if (isPeakTime()) 0.7 else 0.5
-
         val dynamicPoints = specificPlaceList.map { place ->
+            val currentHour = LocalTime.now().hour
+            val threshold = if (isPeakTime(place)) 0.7 else 0.5
             val latitude = place.geocodes?.main?.latitude ?: 0.0
             val longitude = place.geocodes?.main?.longitude ?: 0.0
             val score = place.score ?: 0.1
 
-            val adjustedScore = if (score > threshold) {
+            val adjustedScore = if (currentHour >= 23 || currentHour < 6) {
+                score * 0.5
+            } else if (score > threshold) {
                 score * 2
             } else {
                 score * 0.5
@@ -706,6 +708,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
 
             WeightedLatLng(LatLng(latitude, longitude), adjustedScore)
         }
+
 
         return fixedPoints + dynamicPoints
     }
@@ -795,9 +798,22 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
-    fun isPeakTime(): Boolean {
+    fun isPeakTime(place: SpecificPlaceResponse): Boolean {
         val currentHour = LocalTime.now().hour
-        return currentHour in 11..13 || currentHour in 18..20
+        val categoryType = place.categoryType
+
+        return when (categoryType) {
+            "Dining and Drinking" -> currentHour in 18..22
+            "Retail" -> currentHour in 10..21
+            "Business and Professional Services" -> currentHour in 9..18
+            "Sports and Recreation" -> currentHour in 16..20
+            "Health and Medicine" -> currentHour in 8..17
+            "Arts and Entertainment" -> currentHour in 18..23
+            "Travel and Transportation" -> currentHour in 6..9 || currentHour in 17..20
+            "Community and Government" -> currentHour in 8..17
+            "Event" -> currentHour in 18..23  // eventos à noite
+            else -> currentHour in 11..13 || currentHour in 18..20
+        }
     }
 
     fun customIconByCategory(place: SpecificPlaceResponse) : BitmapDescriptor{

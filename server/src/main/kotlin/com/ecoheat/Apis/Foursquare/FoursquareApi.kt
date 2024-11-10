@@ -40,6 +40,8 @@ class FoursquareApi @Autowired constructor(
         val response = gson.fromJson(jsonString, FoursquareResponse::class.java)
         return response.results
     }
+
+
     fun getPlacesId (lat: String, long:String, radius: String, sort: String ,callback: IFoursquareService){
         val url = "https://api.foursquare.com/v3/places/search?ll=${lat}%2C${long}&radius=${radius}&fields=name%2Cfsq_id%2Clocation&sort=${sort}"
 
@@ -110,7 +112,6 @@ class FoursquareApi @Autowired constructor(
     fun getPlaceByName (lat: String, long:String, name: String ,callback: IFoursquareService){
         //para cada espaço usa %20
         val url =  "https://api.foursquare.com/v3/places/match?name=${name}&ll=${lat}%2C${long}&fields=fsq_id%2Cname%2Ctimezone%2Cdescription%2Ctel%2Cwebsite%2Csocial_media%2Cverified%2Chours_popular%2Crating%2Cstats%2Cpopularity%2Cprice%2Ctips%2Ctastes%2Cfeatures%2Cstore_id"
-
         val request = Request.Builder()
             .url(url)
             .get()
@@ -250,7 +251,7 @@ class FoursquareApi @Autowired constructor(
         weatherImpact = adjustWeatherImpact(weatherImpact, weatherData, placeType, language)
 
         if (placeType == "INDOOR" && trafficImpact < 0.5) {
-            placeImpact *= 1.2
+            placeImpact *= 1.35
         }
 
         var adjustedTrafficImpact = trafficImpact
@@ -262,8 +263,8 @@ class FoursquareApi @Autowired constructor(
                 val trafficTrends = getTrafficTrendsFromHistory(historyData) ?: 1.0
                 val weatherTrends = getWeatherTrendsFromHistory(historyData) ?: 1.0
 
-                 adjustedTrafficImpact = trafficImpact * trafficTrends
-                 adjustedWeatherImpact = weatherImpact * weatherTrends
+                adjustedTrafficImpact = (trafficImpact * 0.7) + (trafficImpact * trafficTrends * 0.3)
+                adjustedWeatherImpact = (weatherImpact * 0.8) + (weatherImpact * weatherTrends * 0.5)
             }
         }
 
@@ -339,16 +340,16 @@ class FoursquareApi @Autowired constructor(
         return when (isDay) {
             true -> { // Durante o dia
                 if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
-                    impact * 1.2 // Aumenta o impacto se a condição for favorável
+                    impact * 1.15 // Aumenta o impacto se a condição for favorável
                 } else {
-                    impact * 0.6 // Reduz o impacto se a condição não for favorável
+                    impact * 0.64 // Reduz o impacto se a condição não for favorável
                 }
             }
             else -> { // Durante a noite
                 if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
-                    impact * 1.1 // Aumenta o impacto se a condição for favorável
+                    impact * 1.25 // Aumenta o impacto se a condição for favorável
                 } else {
-                    impact * 0.5 // Reduz o impacto se a condição não for favorável
+                    impact * 0.45 // Reduz o impacto se a condição não for favorável
                 }
             }
         }
@@ -358,16 +359,16 @@ class FoursquareApi @Autowired constructor(
         return when (isDay) {
             true -> { // Durante o dia
                 if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
-                    impact * 1.2 // Aumenta o impacto se a condição for favorável
+                    impact * 1.35 // Aumenta o impacto se a condição for favorável
                 } else {
-                    impact * 0.8 // Reduz o impacto se a condição não for favorável
+                    impact * 0.75 // Reduz o impacto se a condição não for favorável
                 }
             }
             else -> { // Durante a noite
                 if (hour.condition.text.contains(conditionText, ignoreCase = true)) {
-                    impact * 1.1 // Aumenta o impacto se a condição for favorável
+                    impact * 1.125 // Aumenta o impacto se a condição for favorável
                 } else {
-                    impact * 0.9 // Reduz o impacto se a condição não for favorável
+                    impact * 0.86 // Reduz o impacto se a condição não for favorável
                 }
             }
         }

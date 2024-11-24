@@ -47,9 +47,12 @@ abstract class BaseFoursquareService : IFoursquareService {
         throw UnsupportedOperationException("This method is not implemented yet.")
     }
     override fun onAutocompletePlacesResponse(responseBody: String) {}
-    override fun setCategories() {}
+    override fun setCategories() {
+        throw UnsupportedOperationException("This method is not implemented yet.")
+    }
     override fun getScoreCategories(categoryType: String): ScoreTypeResponse {
         return ScoreTypeResponse(0.0, "")
     }
     override fun onScoreCategoriesResponse(responseBody: String) {}
 }
+

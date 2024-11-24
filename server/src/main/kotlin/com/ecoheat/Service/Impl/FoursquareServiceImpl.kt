@@ -24,8 +24,7 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import kotlin.math.pow
 import kotlin.math.sqrt
-
-
+import com.ecoheat.Model.Category as ModelCategory
 
 @Service
 class FoursquareServiceImpl @Autowired constructor(
@@ -152,35 +151,89 @@ class FoursquareServiceImpl @Autowired constructor(
     //usado para setar no banco as categories do foursquare
     override fun setCategories() {
         try {
-            //service just to set categories from foursquare, if need in future just implement the object methods
-//            val foursquareApi = FoursquareApi(null)
-//            foursquareApi.getAllSubcategories(object : IFoursquareService {
-//                override fun onScoreCategoriesResponse(responseBody: String) {
-//                    val gson = Gson()
-//                    val foursquareResponse: FoursquareCategoriesResponse = gson.fromJson(responseBody, FoursquareCategoriesResponse::class.java)
-//
-//                    for (category in foursquareResponse.response.categories) {
-//                        val firstCategoryName = category.name
-//
-//                        for (secondCategory in category.categories) {
-//                            val secondCategoryName = secondCategory.name
-//
-//                            for (thirdCategory in secondCategory.categories) {
-//                                val thirdCategoryName = thirdCategory.name
-//
-//                                val categoryEntity = Category(
-//                                    firstCategory = firstCategoryName,
-//                                    secondCategory = secondCategoryName,
-//                                    thirdCategory = thirdCategoryName
-//                                )
-//
-//                                repository.save(categoryEntity)
-//                            }
-//                        }
-//                    }
-//
-//                }
-//            })
+            val foursquareApi = FoursquareApi(null,weatherService,googleCalendarService,trafficService,historyService,this)
+            foursquareApi.getAllSubcategories(object : IFoursquareService {
+                override fun getPlacesId(
+                    lat: String,
+                    long: String,
+                    radius: String,
+                    sort: String
+                ): CompletableFuture<String> {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onPlacesResponse(response: List<FoursquarePlace>) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onPlacesFailure(error: String) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun getSpecificPlace(id: String, language: String): CompletableFuture<String> {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onSpecificPlaceResponse(responseBody: String) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun getPlacesByName(lat: String, long: String, name: String): CompletableFuture<String> {
+                    TODO("Not yet implemented")
+                }
+
+                override fun getPlacesTips(id: String): CompletableFuture<String> {
+                    TODO("Not yet implemented")
+                }
+
+                override fun getAutocompletePlaces(
+                    search: String,
+                    lat: String,
+                    long: String
+                ): CompletableFuture<String> {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onAutocompletePlacesResponse(responseBody: String) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun setCategories() {
+                    TODO("Not yet implemented")
+                }
+
+                override fun getScoreCategories(categoryType: String): ScoreTypeResponse {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onScoreCategoriesResponse(responseBody: String) {
+                    val gson = Gson()
+                    val foursquareResponse: FoursquareCategoriesResponse = gson.fromJson(responseBody, FoursquareCategoriesResponse::class.java)
+
+                    for (category in foursquareResponse.response.categories) {
+                        val firstCategoryName = category.name
+
+                        for (secondCategory in category.categories) {
+                            val secondCategoryName = secondCategory.name
+
+                            for (thirdCategory in secondCategory.categories) {
+                                val thirdCategoryName = thirdCategory.name
+
+                                val categoryEntity = ModelCategory(
+                                    firstCategory = firstCategoryName,
+                                    secondCategory = secondCategoryName,
+                                    thirdCategory = thirdCategoryName,
+                                    score = 0.0,
+                                    type = ""
+                                )
+
+                                repository.save(categoryEntity)
+                            }
+                        }
+                    }
+
+                }
+            })
         } catch (ex: RegistroIncorretoException) {
             val errorMessage = messageSource.getMessage("generic.service.error", null, locale)
             onPlacesFailure(errorMessage)

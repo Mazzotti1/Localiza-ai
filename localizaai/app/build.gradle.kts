@@ -66,7 +66,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.runtime:runtime-livedata")
     implementation("androidx.compose.animation:animation")
-
+    implementation ("androidx.core:core-splashscreen:1.0.0")
     // Other dependencies
     implementation("com.google.dagger:dagger:2.40")
     implementation("javax.annotation:javax.annotation-api:1.3.2")

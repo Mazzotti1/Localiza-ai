@@ -12,18 +12,22 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -65,6 +70,7 @@ import com.google.android.gms.maps.MapsInitializer
 import com.localizaai.R
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import java.util.Calendar
+import java.util.Locale
 
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -76,6 +82,11 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("NewApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val locale = Locale("pt", "BR")
+        Locale.setDefault(locale)
+        val config = resources.configuration
+        config.setLocale(locale)
+        createConfigurationContext(config)
 
         setContent {
             MapsInitializer.initialize(applicationContext)
@@ -192,50 +203,24 @@ class MainActivity : ComponentActivity() {
         viewModel.verifyToken(context)
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(80.dp))
             Text(
                 text = stringResource(id = R.string.app_name),
-                fontSize = 42.sp,
+                fontSize = 52.sp,
                 style = MaterialTheme.typography.titleLarge
             )
-            val logoDrawable = if (themeMode) R.drawable.logo_white else R.drawable.logo_black
+            val logoDrawable = R.drawable.logo
             Image(
                 painter = painterResource(id = logoDrawable),
                 contentDescription = "Logo",
-                modifier = Modifier.size(300.dp)
+                modifier = Modifier.size(220.dp)
             )
-            if(viewModel.hasToken){
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = viewModel.weatherResponse?.current?.temp_c?.let {"$it°C" } ?: "",
-                        fontSize = 26.sp,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Spacer(modifier = Modifier.width(36.dp))
-                    val icon = remember { mutableStateOf(R.drawable.ic_car_unknown) }
-                    LaunchedEffect(viewModel.trafficResponse) {
-                        if (viewModel.trafficResponse != null) {
-                            val iconResource = viewModel.checkTrafficStatus()
-                            icon.value = iconResource
-                        }
-                    }
-                    Icon(
-                        painter = painterResource(id = icon.value),
-                        contentDescription = "",
-                        modifier = Modifier.size(28.dp),
-                        tint = Color.Unspecified
-                    )
-
-                }
-            }
+            Spacer(modifier = Modifier.height(90.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
             ) {
                 Button(
                     onClick = {
@@ -246,6 +231,8 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     modifier = Modifier.padding(16.dp)
+                        .width(200.dp),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         text = stringResource(id = R.string.start),
@@ -260,18 +247,24 @@ class MainActivity : ComponentActivity() {
             ) {
                 Button(
                     onClick = { viewModel.toggleThemeMode(context) },
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent
+                    )
                 ) {
                     val icon = if (themeMode) Icons.Filled.WbSunny else Icons.Filled.Nightlight
                     Icon(
                         icon,
                         contentDescription = "Modo ${if (themeMode) "Claro" else "Escuro"}",
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(42.dp)
                     )
                 }
                 Button(
                     onClick = { viewModel.toggleLanguage(context) },
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent
+                    )
                 ) {
                     val icon = when (language) {
                         "en" -> R.drawable.brazil_flag
@@ -281,7 +274,7 @@ class MainActivity : ComponentActivity() {
                     Icon(
                         painter = painterResource(id = icon),
                         contentDescription = "Linguagem ${if (language == "pt") "Português" else "Inglês"}",
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(42.dp),
                         tint = Color.Unspecified
                     )
                 }

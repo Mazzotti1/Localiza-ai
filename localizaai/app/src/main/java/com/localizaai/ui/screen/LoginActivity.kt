@@ -5,12 +5,17 @@ import com.localizaai.ui.ViewModel.LoginScreenViewModel
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -19,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,7 +54,9 @@ class LoginActivity : ComponentActivity() {
             val context = applicationContext
             val viewModel: LoginScreenViewModel = viewModel(factory = LoginScreenViewModelFactory(context))
             val navController = rememberNavController()
+            viewModel.clearFields()
             viewModel.loadThemeState(this)
+            viewModel.loadLanguageState(this)
             val themeMode = viewModel.themeMode.value
             LoginScreen(viewModel,navController, themeMode, context)
 
@@ -82,49 +90,68 @@ fun LoginContent(
 ) {
     val focusManager = LocalFocusManager.current
 
+    DisposableEffect(Unit) {
+        viewModel.clearFields()
+        viewModel.loadLanguageState(context)
+        onDispose { }
+    }
+
     Column (
         modifier = Modifier.fillMaxSize()
             .clickable { focusManager.clearFocus() },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = stringResource(id = R.string.name_title),
-            fontSize = 24.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            TextField(
-                value = viewModel.name,
-                onValueChange = { viewModel.onChangeName(it) },
-                label = {Text(text =stringResource(id = R.string.name_placeholder), fontSize = 16.sp)},
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .then(Modifier.padding(bottom= 14.dp))
+        Column (
+            horizontalAlignment = Alignment.Start
+        ){
+            Text(
+                text = stringResource(id = R.string.name_title),
+                fontSize = 20.sp,
+                modifier = Modifier.padding(bottom = 2.dp, start = 10.dp),
             )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                TextField(
+                    value = viewModel.name,
+                    onValueChange = { viewModel.onChangeName(it) },
+                    label = {Text(text =stringResource(id = R.string.name_placeholder), fontSize = 16.sp)},
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                        .border(
+                            BorderStroke(2.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                        ),
+                )
+            }
         }
-        Text(
-            text = stringResource(id = R.string.password_title),
-            fontSize = 24.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            TextField(
-                value = viewModel.password,
-                onValueChange = { viewModel.onChangePassword(it) },
-                label = {Text(text =stringResource(id = R.string.password_placeholder), fontSize = 16.sp)},
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .then(Modifier.padding(bottom=8.dp)),
-                visualTransformation = PasswordVisualTransformation()
+        Column(
+            horizontalAlignment = Alignment.Start,
+            modifier = Modifier.padding(bottom = 15.dp)
+        ){
+            Text(
+                text = stringResource(id = R.string.password_title),
+                fontSize = 24.sp,
+                modifier = Modifier.padding(bottom = 2.dp, top = 20.dp, start = 10.dp)
             )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                TextField(
+                    value = viewModel.password,
+                    onValueChange = { viewModel.onChangePassword(it) },
+                    label = {Text(text =stringResource(id = R.string.password_placeholder), fontSize = 16.sp)},
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                        .border(BorderStroke(2.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                        ),
+                    visualTransformation = PasswordVisualTransformation()
+                )
+            }
         }
+        Spacer(modifier = Modifier.height(15.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
@@ -137,10 +164,9 @@ fun LoginContent(
                         viewModel.isLoading = true
                         viewModel.login(context, navController)
                     },
-                    colors = ButtonDefaults.buttonColors(colorResource(id = R.color.green_btn)),
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .then(Modifier.padding(bottom = 8.dp))
+                    colors = ButtonDefaults.buttonColors(colorResource(id = R.color.DarkModeHighlight)),
+                    modifier = Modifier.width(200.dp),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         text = stringResource(id = R.string.btn_login),
@@ -150,9 +176,11 @@ fun LoginContent(
                 }
             }
         }
+        Spacer(modifier = Modifier.height(30.dp))
         Text(
             text = stringResource(id = R.string.hasnt_account),
             fontSize = 16.sp,
+            modifier = Modifier.padding(bottom = 5.dp)
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -160,9 +188,9 @@ fun LoginContent(
         ) {
             Button(
                 onClick = { navController.navigate("register") },
-                colors = ButtonDefaults.buttonColors(colorResource(id = R.color.black)),
-                modifier = Modifier
-                    .padding(16.dp)
+                colors = ButtonDefaults.buttonColors(colorResource(id = R.color.DarkModeHighlight)),
+                modifier = Modifier.width(200.dp),
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = stringResource(id = R.string.btn_register),

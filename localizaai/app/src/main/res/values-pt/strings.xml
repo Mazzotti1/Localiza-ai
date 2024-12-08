@@ -1,8 +1,8 @@
 <resources>
     <!--    Main-->
-    <string name="app_name">Localiza ai!</string>
+    <string name="app_name">Hatlas</string>
     <string name="title_activity_register_screen">Tela de Registro</string>
-    <string name="start">Iniciar</string>
+    <string name="start">Entrar</string>
 
     <!--    Register-->
     <string name="name_title">Nome</string>
@@ -12,7 +12,7 @@
     <string name="password_placeholder">Digite sua senha</string>
     <string name="rePassword_placeholder">Digite novamente sua senha</string>
     <string name="btn_register">Registrar</string>
-    <string name="btn_login">Login</string>
+    <string name="btn_login">Entrar</string>
     <string name="has_account">Já tenho uma conta registrada!</string>
     <string name="hasnt_account">Ainda não tenho uma conta registrada!</string>
     <string name="fill_all_fields">Por favor, preencha todos os campos</string>

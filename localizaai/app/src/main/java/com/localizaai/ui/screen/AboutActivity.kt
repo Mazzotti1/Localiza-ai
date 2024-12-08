@@ -195,7 +195,7 @@ fun AboutContent(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ){
-            val logoDrawable = if (themeMode) R.drawable.logo_white else R.drawable.logo_black
+            val logoDrawable = R.drawable.logo
             Image(
                 painter = painterResource(id = logoDrawable),
                 contentDescription = "Logo",

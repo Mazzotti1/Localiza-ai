@@ -1,6 +1,7 @@
 package com.localizaai.ui.ViewModel
 
 import android.content.Context
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
+import java.util.Locale
 
 class LoginScreenViewModel(private val context: Context) : ViewModel() {
     private val repository = LoginRepository(context)
@@ -30,6 +32,7 @@ class LoginScreenViewModel(private val context: Context) : ViewModel() {
     var password by mutableStateOf("")
     var isLoading by mutableStateOf(false)
     private var token = ""
+    val language = mutableStateOf("pt")
 
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -47,14 +50,28 @@ class LoginScreenViewModel(private val context: Context) : ViewModel() {
         password = newPassword
     }
 
+    fun loadLanguageState(context: Context) {
+        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+        val savedLanguage = sharedPreferences.getString("language", "pt") ?: "pt"
+        language.value = savedLanguage
+
+        val locale = Locale(savedLanguage)
+        Locale.setDefault(locale)
+        val configuration = Configuration()
+        configuration.setLocale(locale)
+        context.resources.updateConfiguration(configuration, context.resources.displayMetrics)
+    }
+
     fun login(context: Context, navController: NavController) {
         val resources = context.resources
+
         if (name.isBlank() || password.isBlank()) {
             Toast.makeText(
                 context,
                 resources.getString(R.string.fill_all_fields),
                 Toast.LENGTH_SHORT
             ).show()
+            isLoading = false
             return
         }
 
@@ -82,10 +99,13 @@ class LoginScreenViewModel(private val context: Context) : ViewModel() {
                             popUpTo(navController.graph.startDestinationId)
                         }
                     } else {
-                        // Handle case where token is null (login failed)
+                        val errorBody = when (language.value) {
+                            "en" -> "Credentials not found"
+                            else -> "Credenciais não encontradas"
+                        }
                         Toast.makeText(
                             context,
-                            status.message ?: "Erro desconhecido",
+                            errorBody ?: "Erro desconhecido",
                             Toast.LENGTH_SHORT
                         ).show()
                         isLoading = false
@@ -94,6 +114,7 @@ class LoginScreenViewModel(private val context: Context) : ViewModel() {
             } catch (e: HttpException) {
                 val errorBody = e.response()?.errorBody()?.string()
                 println("Erro HTTP: $errorBody")
+                isLoading = false
                 viewModelScope.launch(Dispatchers.Main) {
                     Toast.makeText(
                         context,
@@ -104,6 +125,7 @@ class LoginScreenViewModel(private val context: Context) : ViewModel() {
                 }
             } catch (e: Throwable) {
                 println("Erro servidor: ${e.message}")
+                isLoading = false
                 viewModelScope.launch(Dispatchers.Main) {
                     Toast.makeText(
                         context,
@@ -117,9 +139,10 @@ class LoginScreenViewModel(private val context: Context) : ViewModel() {
     }
 
 
-    private fun clearFields(){
+    fun clearFields(){
         name = ""
         password = ""
+        isLoading = false
     }
 
 }

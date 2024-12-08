@@ -1,6 +1,6 @@
 <resources>
     <!--    Main-->
-    <string name="app_name">Localiza ai!</string>
+    <string name="app_name">Hatlas</string>
     <string name="title_activity_register_screen">RegisterScreen</string>
     <string name="start">Start</string>
 

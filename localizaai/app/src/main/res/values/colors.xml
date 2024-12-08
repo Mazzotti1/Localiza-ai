@@ -11,4 +11,5 @@
     <color name="yellow_btn">#e6e600</color>
     <color name="off_white">#e6e6e6</color>
     <color name="splash">#DFCFA7</color>
+    <color name="DarkModeHighlight">#0C3A63</color>
 </resources>

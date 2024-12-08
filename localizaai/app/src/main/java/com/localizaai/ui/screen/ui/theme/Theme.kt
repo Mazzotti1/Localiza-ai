@@ -12,25 +12,21 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = LightIndigo,
-    secondary = SoftGray,
-    background = DarkBlue,
-    surface = DarkBlueGray,
-    onPrimary = OffWhite,
-    onSecondary = OffWhite,
-    onBackground = OffWhite,
+    primary = DarkModeSecondary1,
+    secondary = DarkModeSecondary2,
+    background = DarkModeBackground,
+    onPrimary = DarkModeText,
+    onSecondary = DarkModeSecundaryText,
     onSurface = OffWhite
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = DarkBlue,
-    secondary = LightBeige,
-    background = OffWhite,
-    surface = SoftGray,
-    onPrimary = OffWhite,
-    onSecondary = DarkBlue,
-    onBackground = DarkBlue,
-    onSurface = DarkBlue
+    primary = LightModeSecondary1,
+    secondary = LightModeSecondary2,
+    background = LightModeBackground,
+    onPrimary = LightModeText,
+    onSecondary = LightModeSecondaryText,
+    onSurface = OffWhite
 )
 
 @Composable
@@ -46,7 +42,7 @@ fun localizaaiTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
+            window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
         }
     }

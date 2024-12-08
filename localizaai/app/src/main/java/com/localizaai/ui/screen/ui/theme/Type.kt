@@ -18,24 +18,24 @@ val provider = GoogleFont.Provider(
     certificates = R.array.com_google_android_gms_fonts_certs
 )
 
-val pollerName = GoogleFont("Poller One")
-    val PollerOne = FontFamily(
-        Font(googleFont = pollerName,
+val poppinsName = GoogleFont("Poppins")
+    val Poppins = FontFamily(
+        Font(googleFont = poppinsName,
         fontProvider = provider,
     )
 )
 
-val moulpaliName = GoogleFont("Moulpali")
-val moulpali = FontFamily(
-    Font(googleFont = moulpaliName,
+val nunitoName = GoogleFont("Nunito")
+val nunito = FontFamily(
+    Font(googleFont = nunitoName,
         fontProvider = provider,
     )
 )
 
 
-val robotoCondensedName = GoogleFont("Roboto Condensed")
-val RobotoCondensed = FontFamily(
-    Font(googleFont = robotoCondensedName,
+val montserratName = GoogleFont("Montserrat")
+val Montserrat = FontFamily(
+    Font(googleFont = montserratName,
         fontProvider = provider,
     )
 )
@@ -43,28 +43,28 @@ val RobotoCondensed = FontFamily(
 
 val Typography = Typography(
     bodyLarge = TextStyle(
-        fontFamily = moulpali,
+        fontFamily = nunito,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     ),
     titleLarge = TextStyle(
-        fontFamily = PollerOne,
+        fontFamily = Poppins,
         fontWeight = FontWeight.Normal,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
     labelSmall = TextStyle(
-        fontFamily = RobotoCondensed,
+        fontFamily = Montserrat,
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp
     ),
     titleMedium = TextStyle(
-        fontFamily = RobotoCondensed,
+        fontFamily = Montserrat,
         fontWeight = FontWeight.Bold,
         fontSize = 22.sp,
         lineHeight = 24.sp,

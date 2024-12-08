@@ -1,6 +1,7 @@
 package com.localizaai.ui.ViewModel
 
 import android.content.Context
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
+import java.util.Locale
 
 class RegisterScreenViewModel(private val context: Context) : ViewModel() {
     private val repository = RegisterRepository(context)
@@ -29,7 +31,7 @@ class RegisterScreenViewModel(private val context: Context) : ViewModel() {
     var password by mutableStateOf("")
     var rePassword by mutableStateOf("")
     var isLoading by mutableStateOf((false))
-
+    val language = mutableStateOf("pt")
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
@@ -47,6 +49,18 @@ class RegisterScreenViewModel(private val context: Context) : ViewModel() {
 
     fun onChangeRePassword(newRePassword: String){
         rePassword = newRePassword
+    }
+
+    fun loadLanguageState(context: Context) {
+        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+        val savedLanguage = sharedPreferences.getString("language", "pt") ?: "pt"
+        language.value = savedLanguage
+
+        val locale = Locale(savedLanguage)
+        Locale.setDefault(locale)
+        val configuration = Configuration()
+        configuration.setLocale(locale)
+        context.resources.updateConfiguration(configuration, context.resources.displayMetrics)
     }
 
     fun register(context: Context, navController: NavController) {
@@ -97,7 +111,7 @@ class RegisterScreenViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    private fun clearFields(){
+    fun clearFields(){
         name = ""
         password = ""
         rePassword = ""

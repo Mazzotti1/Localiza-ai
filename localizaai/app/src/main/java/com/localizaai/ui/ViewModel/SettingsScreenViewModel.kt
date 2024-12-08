@@ -103,7 +103,7 @@ class SettingsScreenViewModel(private val context: Context) : ViewModel() {
 
     fun loadLanguageState(context: Context) {
         val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
-        val savedLanguage = sharedPreferences.getString("language", "en") ?: "en"
+        val savedLanguage = sharedPreferences.getString("language", "pt") ?: "pt"
         language.value = savedLanguage
 
         val locale = Locale(savedLanguage)

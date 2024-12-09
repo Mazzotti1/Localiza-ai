@@ -2,19 +2,14 @@ package com.localizaai.ui.screen
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
+import android.location.Location
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,14 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Nightlight
-import androidx.compose.material.icons.filled.WbSunny
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,44 +25,48 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.localizaai.Model.WeatherRequest
 import com.localizaai.R
 import com.localizaai.ui.ViewModel.AboutScreenViewModel
-import com.localizaai.ui.ViewModel.SettingsScreenViewModel
+import com.localizaai.ui.factory.AboutScreenViewModelFactory
 import com.localizaai.ui.screen.ui.theme.localizaaiTheme
+import com.localizaai.ui.util.CustomTopBar
 import com.localizaai.ui.util.NavigationBar
+import java.util.Calendar
 
 
 class AboutActivity : ComponentActivity() {
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+
+    private var locationLatLng: Location? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val viewModel: AboutScreenViewModel = viewModel()
             val context = applicationContext
+            val viewModel: AboutScreenViewModel =
+                viewModel(factory = AboutScreenViewModelFactory(context))
             val navController = rememberNavController()
-
+            fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
             viewModel.loadThemeState(this)
 
             val themeMode = viewModel.themeMode.value
-            AboutScreen(viewModel, navController, themeMode, context)
+            AboutScreen(viewModel, navController, themeMode, context, fusedLocationProviderClient)
 
         }
     }
@@ -86,8 +77,28 @@ fun AboutScreen(
     viewModel: AboutScreenViewModel,
     navController: NavController,
     themeMode: Boolean,
-    context: Context
+    context: Context,
+    fusedLocationProviderClient : FusedLocationProviderClient,
 ) {
+    var locationLatLng: Location? = null
+    val language = viewModel.language.value
+
+    LaunchedEffect(Unit) {
+        viewModel.startLocationUpdates(fusedLocationProviderClient, context) { location ->
+            locationLatLng = location
+            val cityName = viewModel.getCityNameFromLocation(context, locationLatLng!!).toString()
+            val days = 3
+            val calendar = Calendar.getInstance()
+            val hour = calendar.get(Calendar.HOUR_OF_DAY)
+            val lang = language
+
+            val weatherData = WeatherRequest(cityName, days, hour, lang)
+
+            viewModel.loadWeatherProps(context, weatherData)
+            viewModel.loadTrafficProps(context, location)
+        }
+    }
+
     localizaaiTheme(darkTheme = themeMode) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Scaffold(
@@ -113,28 +124,17 @@ fun AboutScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(viewModel: AboutScreenViewModel, navController : NavController) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-    CenterAlignedTopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.primary,
-        ),
-        title = {
-            Text(
-                text = stringResource(id = R.string.about_title),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = { viewModel.onBackPressed(navController) }) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-        },
-        scrollBehavior = scrollBehavior,
+    val trafficData = viewModel.trafficResponse
+    val weatherData = viewModel.weatherResponse
+    CustomTopBar(
+        navController = navController,
+        viewModel = viewModel,
+        title = stringResource(id = R.string.about_title),
+        temperature = weatherData,
+        traffic = trafficData,
+        onBackClick = {
+            viewModel.onBackPressed(navController)
+        }
     )
 }
 
@@ -163,7 +163,7 @@ fun SocialButtonList(themeMode: Boolean, buttons: List<SocialButton>, viewModel 
                 Icon(
                     painter = painterResource(id = iconResource),
                     contentDescription = button.contentDescription,
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(172.dp),
                     tint = Color.Unspecified
                 )
             }
@@ -181,7 +181,6 @@ fun AboutContent(
     val focusManager = LocalFocusManager.current
     viewModel.getTokenProps(context)
 
-
     Column (
         modifier = Modifier
             .fillMaxSize()
@@ -189,7 +188,7 @@ fun AboutContent(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(56.dp))
+        Spacer(modifier = Modifier.height(85.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
@@ -199,7 +198,7 @@ fun AboutContent(
             Image(
                 painter = painterResource(id = logoDrawable),
                 contentDescription = "Logo",
-                modifier = Modifier.size(150.dp)
+                modifier = Modifier.size(190.dp)
             )
         }
 
@@ -209,10 +208,10 @@ fun AboutContent(
         ) {
             Text(
                 text = stringResource(id = R.string.app_name),
-                fontSize = 26.sp,
+                fontSize = 32.sp,
                 style = MaterialTheme.typography.titleLarge,
                 modifier =
-                    Modifier.padding(20.dp),
+                    Modifier.padding(10.dp),
 
             )
         }

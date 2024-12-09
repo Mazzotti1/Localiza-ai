@@ -17,7 +17,8 @@ private val DarkColorScheme = darkColorScheme(
     background = DarkModeBackground,
     onPrimary = DarkModeText,
     onSecondary = DarkModeSecundaryText,
-    onSurface = OffWhite
+    onSurface = OffWhite,
+    tertiary = DarkModeBackgroundTopbar
 )
 
 private val LightColorScheme = lightColorScheme(

@@ -245,29 +245,6 @@ class MainActivityViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    fun checkTrafficStatus(): Int {
-        val currentSpeed = trafficResponse?.currentSpeed
-        val freeFlowSpeed = trafficResponse?.freeFlowSpeed
-        val currentTravelTime = trafficResponse?.currentTravelTime
-        val freeFlowTravelTime = trafficResponse?.freeFlowTravelTime
-        val roadClosure = trafficResponse?.roadClosure
 
-        return when {
-            roadClosure == true -> R.drawable.ic_car_red // Ícone vermelho para fechamento de estrada
-
-            currentSpeed != null && freeFlowSpeed != null && currentSpeed < freeFlowSpeed * 0.5 -> R.drawable.ic_car_red // Ícone vermelho para trânsito muito lento
-
-            currentSpeed != null && freeFlowSpeed != null && currentSpeed < freeFlowSpeed * 0.75 -> R.drawable.ic_car_yellow // Ícone amarelo para trânsito moderadamente lento
-
-            currentTravelTime != null && freeFlowTravelTime != null && currentTravelTime > freeFlowTravelTime * 1.5 -> R.drawable.ic_car_red // Ícone vermelho para tempo de viagem muito alto
-
-            currentTravelTime != null && freeFlowTravelTime != null && currentTravelTime > freeFlowTravelTime * 1.25 -> R.drawable.ic_car_yellow // Ícone amarelo para tempo de viagem moderadamente alto
-
-            currentSpeed != null && freeFlowSpeed != null -> R.drawable.ic_car_green // Ícone verde para trânsito bom
-
-            else -> R.drawable.ic_car_unknown // Ícone desconhecido
-        }
-
-    }
 
 }

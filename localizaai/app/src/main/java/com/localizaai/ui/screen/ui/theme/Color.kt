@@ -20,7 +20,7 @@ val OffWhite = Color(0xFFD9D9D9)
 ////////////////////////////////////////////////////
 
 //Dark mode
-
+val DarkModeBackgroundTopbar = Color(0xFF0E0E0E)
 val DarkModeBackground = Color(0xFF121212)
 val DarkModeHighlight = Color(0xFF0C3A63)
 val DarkModeSecondary1 = Color(0xFF06B787)

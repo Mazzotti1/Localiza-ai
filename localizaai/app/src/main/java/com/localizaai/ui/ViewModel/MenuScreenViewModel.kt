@@ -653,7 +653,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             val geocoder = Geocoder(context, Locale.getDefault())
             val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
             if (addresses?.isNotEmpty() == true) {
-                addresses[0]?.locality
+                addresses[0]?.subAdminArea  ?: addresses[0]?.locality
             } else {
                 null
             }

@@ -2,6 +2,7 @@ package com.localizaai.ui.screen
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.location.Location
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,32 +20,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material3.AlertDialogDefaults.containerColor
 import androidx.compose.material3.Button
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,58 +49,103 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.localizaai.Model.WeatherRequest
 import com.localizaai.R
 import com.localizaai.ui.ViewModel.AboutScreenViewModel
 import com.localizaai.ui.ViewModel.SettingsScreenViewModel
+import com.localizaai.ui.factory.AboutScreenViewModelFactory
 import com.localizaai.ui.factory.SettingsScreenViewModelFactory
 import com.localizaai.ui.screen.ui.theme.localizaaiTheme
 import com.localizaai.ui.util.ConfirmationDialog
+import com.localizaai.ui.util.CustomTopBar
 import com.localizaai.ui.util.LoadingIndicator
 import com.localizaai.ui.util.NavigationBar
+import java.util.Calendar
 
 
 class SettingsAcitivty : ComponentActivity() {
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+
+    private var locationLatLng: Location? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             val context = applicationContext
-            val viewModel: SettingsScreenViewModel = viewModel(factory = SettingsScreenViewModelFactory(context))
-            val aboutViewModel: AboutScreenViewModel = viewModel()
+            val viewModel: SettingsScreenViewModel =
+                viewModel(factory = SettingsScreenViewModelFactory(context))
+            val aboutViewModel: AboutScreenViewModel =
+                viewModel(factory = AboutScreenViewModelFactory(context))
 
             val navController = rememberNavController()
-
+            fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
             viewModel.loadLanguageState(this)
             viewModel.loadThemeState(this)
 
             val themeMode = viewModel.themeMode.value
-            SettingsScreen(viewModel, navController, themeMode, context)
+            SettingsScreen(viewModel, navController, themeMode, context, fusedLocationProviderClient)
 
             NavHost(navController = navController, startDestination = "settings") {
                 composable("settings") {
-                    SettingsScreen(viewModel = viewModel, navController = navController, themeMode, context)
+                    SettingsScreen(
+                        viewModel = viewModel,
+                        navController = navController,
+                        themeMode,
+                        context,
+                        fusedLocationProviderClient
+                    )
                 }
                 composable("about") {
-                    AboutScreen(aboutViewModel, navController, themeMode, context)
+                    AboutScreen(aboutViewModel, navController, themeMode, context, fusedLocationProviderClient)
                 }
             }
         }
     }
 }
+
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun SettingsScreen(
     viewModel: SettingsScreenViewModel,
     navController: NavController,
     themeMode: Boolean,
-    context: Context
+    context: Context,
+    fusedLocationProviderClient : FusedLocationProviderClient
 ) {
+    var locationLatLng: Location? = null
+
     val language = viewModel.language.value
     val themeMode = viewModel.themeMode.value
+
+    LaunchedEffect(Unit) {
+        viewModel.startLocationUpdates(fusedLocationProviderClient, context) { location ->
+            locationLatLng = location
+            val cityName = viewModel.getCityNameFromLocation(context, locationLatLng!!).toString()
+            val days = 3
+            val calendar = Calendar.getInstance()
+            val hour = calendar.get(Calendar.HOUR_OF_DAY)
+            val lang = language
+
+            val weatherData = WeatherRequest(cityName, days, hour, lang)
+
+            viewModel.loadWeatherProps(context, weatherData)
+            viewModel.loadTrafficProps(context, location)
+        }
+    }
+
+
     localizaaiTheme(darkTheme = themeMode) {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
             Scaffold(
                 topBar = {
-                    TopBar(viewModel,navController)
+                    TopBar(viewModel, navController)
                 },
                 bottomBar = {
                     NavigationBar(navController, context)
@@ -124,29 +166,18 @@ fun SettingsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(viewModel: SettingsScreenViewModel, navController : NavController) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-    CenterAlignedTopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.primary,
-        ),
-        title = {
-            Text(
-                text = stringResource(id = R.string.settings_title),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = { viewModel.onBackPressed(navController) }) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-        },
-        scrollBehavior = scrollBehavior,
+fun TopBar(viewModel: SettingsScreenViewModel, navController: NavController) {
+    val trafficData = viewModel.trafficResponse
+    val weatherData = viewModel.weatherResponse
+    CustomTopBar(
+        navController = navController,
+        viewModel = viewModel,
+        title = stringResource(id = R.string.settings_title),
+        temperature = weatherData,
+        traffic = trafficData,
+        onBackClick = {
+            viewModel.onBackPressed(navController)
+        }
     )
 }
 
@@ -162,24 +193,24 @@ fun SettingsContent(
     viewModel.getTokenProps(context)
     val hasToken = viewModel.hasToken.value
 
-    Column (
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .clickable { focusManager.clearFocus() },
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(56.dp))
+        Spacer(modifier = Modifier.height(85.dp))
         Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
-        ){
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             val logoDrawable = R.drawable.logo
             Image(
-                    painter = painterResource(id = logoDrawable),
-                    contentDescription = "Logo",
-                    modifier = Modifier.size(150.dp)
+                painter = painterResource(id = logoDrawable),
+                contentDescription = "Logo",
+                modifier = Modifier.size(150.dp)
             )
         }
 
@@ -193,29 +224,14 @@ fun SettingsContent(
                     .padding(8.dp)
                     .width(IntrinsicSize.Max)
             ) {
-                Text(text = stringResource(id = R.string.about_title),
-                    fontSize = 16.sp,
-                    style = MaterialTheme.typography.labelSmall)
+                Text(
+                    text = stringResource(id = R.string.about_title),
+                    fontSize = 29.sp,
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
         }
-        if(hasToken) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                TextButton(
-                    onClick = { navController.navigate("main") },
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .width(IntrinsicSize.Max)
-                ) {
-                    Text(text = stringResource(id = R.string.change_password),
-                        fontSize = 16.sp,
-                        style = MaterialTheme.typography.labelSmall)
-                }
-            }
-        }
-        if(hasToken){
+        if (hasToken) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
@@ -228,14 +244,16 @@ fun SettingsContent(
                         .padding(8.dp)
                         .width(IntrinsicSize.Max)
                 ) {
-                    Text(text = stringResource(id = R.string.logout),
-                        fontSize = 16.sp,
+                    Text(
+                        text = stringResource(id = R.string.logout),
+                        fontSize = 29.sp,
                         color = Color.Red,
-                        style = MaterialTheme.typography.labelSmall)
+                        style = MaterialTheme.typography.labelSmall
+                    )
                 }
             }
         }
-        if(hasToken) {
+        if (hasToken) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
@@ -248,27 +266,27 @@ fun SettingsContent(
                 ) {
                     Text(
                         text = stringResource(id = R.string.delete_account),
-                        fontSize = 16.sp,
+                        fontSize = 29.sp,
                         color = Color.Red,
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
             }
         }
-        if(hasToken) {
+        if (hasToken) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
                 TextButton(
-                    onClick = { viewModel.isDialogDesactivateOpen.value = true},
+                    onClick = { viewModel.isDialogDesactivateOpen.value = true },
                     modifier = Modifier
                         .padding(8.dp)
                         .width(IntrinsicSize.Max)
                 ) {
                     Text(
                         text = stringResource(id = R.string.delete_desactivate),
-                        fontSize = 16.sp,
+                        fontSize = 29.sp,
                         color = Color.Red,
                         style = MaterialTheme.typography.labelSmall
                     )
@@ -281,18 +299,24 @@ fun SettingsContent(
         ) {
             Button(
                 onClick = { viewModel.toggleThemeMode(context) },
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent
+                )
             ) {
                 val icon = if (themeMode) Icons.Filled.WbSunny else Icons.Filled.Nightlight
                 Icon(
                     icon,
                     contentDescription = "Modo ${if (themeMode) "Claro" else "Escuro"}",
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(42.dp)
                 )
             }
             Button(
                 onClick = { viewModel.toggleLanguage(context) },
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent
+                )
             ) {
                 val icon = when (language) {
                     "en" -> R.drawable.brazil_flag
@@ -302,7 +326,7 @@ fun SettingsContent(
                 Icon(
                     painter = painterResource(id = icon),
                     contentDescription = "Linguagem ${if (language == "pt") "Português" else "Inglês"}",
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(42.dp),
                     tint = Color.Unspecified
                 )
             }

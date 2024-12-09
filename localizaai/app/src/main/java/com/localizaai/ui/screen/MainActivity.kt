@@ -68,6 +68,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.MapsInitializer
 
 import com.localizaai.R
+import com.localizaai.ui.factory.AboutScreenViewModelFactory
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import java.util.Calendar
 import java.util.Locale
@@ -96,7 +97,7 @@ class MainActivity : ComponentActivity() {
             val loginViewModel: LoginScreenViewModel = viewModel(factory = LoginScreenViewModelFactory(context))
             val menuViewModel: MenuScreenViewModel = viewModel(factory = MenuScreenViewModelFactory(context))
             val settingsViewModel: SettingsScreenViewModel = viewModel(factory = SettingsScreenViewModelFactory(context))
-            val aboutViewModel: AboutScreenViewModel = viewModel()
+            val aboutViewModel: AboutScreenViewModel = viewModel(factory = AboutScreenViewModelFactory(context))
             val navController = rememberNavController()
             fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
             viewModel.loadLanguageState(this)
@@ -117,10 +118,10 @@ class MainActivity : ComponentActivity() {
                     MenuScreen(menuViewModel, navController, themeMode ,context, fusedLocationProviderClient)
                 }
                 composable("settings") {
-                    SettingsScreen(settingsViewModel, navController, themeMode, context)
+                    SettingsScreen(settingsViewModel, navController, themeMode, context, fusedLocationProviderClient)
                 }
                 composable("about") {
-                    AboutScreen(aboutViewModel, navController, themeMode, context)
+                    AboutScreen(aboutViewModel, navController, themeMode, context, fusedLocationProviderClient)
                 }
             }
         }
@@ -137,31 +138,11 @@ class MainActivity : ComponentActivity() {
         )
 
         LaunchedEffect(permissionState) {
-            if (permissionState.allPermissionsGranted) {
-                prepareDataForApi(context,viewModel, language)
-            }else{
+            if (!permissionState.allPermissionsGranted) {
                 permissionState.launchMultiplePermissionRequest()
             }
         }
     }
-
-    private fun prepareDataForApi(context: Context, viewModel: MainActivityViewModel, language: String) {
-        viewModel.startLocationUpdates(fusedLocationProviderClient, context) { location ->
-            locationLatLng = location
-            val cityName = viewModel.getCityNameFromLocation(context, locationLatLng!!).toString()
-            val days = 3
-            val calendar = Calendar.getInstance()
-            val hour = calendar.get(Calendar.HOUR_OF_DAY)
-            val lang = language
-
-            val weatherData = WeatherRequest(cityName, days, hour, lang)
-
-            viewModel.loadWeatherProps(context, weatherData)
-            viewModel.loadTrafficProps(context, location)
-            viewModel.loadEventsProps(context, lang)
-        }
-    }
-
 
     @Composable
     fun MainScreen(
@@ -173,7 +154,6 @@ class MainActivity : ComponentActivity() {
         val themeMode = viewModel.themeMode.value
 
         RequestLocationPermissions(context, viewModel, language)
-
 
         localizaaiTheme(darkTheme = themeMode) {
             Surface(
@@ -256,7 +236,7 @@ class MainActivity : ComponentActivity() {
                     Icon(
                         icon,
                         contentDescription = "Modo ${if (themeMode) "Claro" else "Escuro"}",
-                        modifier = Modifier.size(42.dp)
+                        modifier = Modifier.size(42.dp),
                     )
                 }
                 Button(

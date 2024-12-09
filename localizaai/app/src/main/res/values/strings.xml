@@ -71,4 +71,6 @@
 
     <!--    SearchBar-->
     <string name="search">Search</string>
+
+    <string name="map_title">Map</string>
 </resources>

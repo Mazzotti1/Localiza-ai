@@ -77,6 +77,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.google.accompanist.permissions.rememberPermissionState
@@ -107,6 +108,7 @@ import com.localizaai.Model.SpecificPlaceResponse
 import com.localizaai.R
 import com.localizaai.ui.factory.MenuScreenViewModelFactory
 import com.localizaai.ui.util.AnimatedCircle
+import com.localizaai.ui.util.CustomTopBar
 import com.localizaai.ui.util.FilterButton
 import com.localizaai.ui.util.HeatMapButton
 import com.localizaai.ui.util.MapHideButton
@@ -147,7 +149,7 @@ class MenuActivity : ComponentActivity() {
                     )
                 }
                 composable("settings") {
-                    SettingsScreen(settingsViewModel, navController, themeMode, context)
+                    SettingsScreen(settingsViewModel, navController, themeMode, context, fusedLocationProviderClient)
                 }
             }
         }
@@ -239,28 +241,17 @@ fun MenuScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(viewModel: MenuScreenViewModel, navController: NavController) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-    CenterAlignedTopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.primary,
-        ),
-        title = {
-            Text(
-                "Menu",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = { viewModel.onBackPressed(navController) }) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-        },
-        scrollBehavior = scrollBehavior,
+    val trafficData = viewModel.trafficResponse
+    val weatherData = viewModel.weatherResponse
+    CustomTopBar(
+        navController = navController,
+        viewModel = viewModel,
+        title = stringResource(id = R.string.map_title),
+        temperature = weatherData,
+        traffic = trafficData,
+        onBackClick = {
+            viewModel.onBackPressed(navController)
+        }
     )
 }
 

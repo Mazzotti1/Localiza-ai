@@ -1,5 +1,6 @@
 package com.localizaai.ui.util
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SouthAmerica
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,16 +34,20 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.localizaai.Model.Autocomplete
 import com.localizaai.Model.AutocompleteResult
 import com.localizaai.Model.Suggestion
@@ -88,24 +94,26 @@ fun SearchBarMain(
                     text = newText
                     onSearch(newText)
                 },
-                placeholder = {
-                    Text(text = stringResource(id = R.string.search), fontSize = 12.sp)
-                },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.Search,
-                        contentDescription = "Search Icon"
+                        contentDescription = "Search Icon",
+                        modifier = Modifier.size(20.dp)
                     )
                 },
                 modifier = Modifier
                     .weight(1f)
-                    .height(55.dp)
-                    .border(0.8.dp, Color.Black, RoundedCornerShape(16.dp))
+                    .height(45.dp)
                     .focusRequester(focusRequester)
                     .onFocusChanged { focusState ->
                         onFocusChanged(focusState.isFocused)
                         viewModel.showSearchListItens.value = false
-                    },
+                    }
+                    .border(
+                        width = 1.dp,
+                        color = if (isFocused) MaterialTheme.colorScheme.primary else Color.Gray,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Search
@@ -117,10 +125,14 @@ fun SearchBarMain(
                     }
                 ),
                 colors = TextFieldDefaults.textFieldColors(
-                    cursorColor = Color.Black,
+                    containerColor = MaterialTheme.colorScheme.background,
+                    cursorColor = MaterialTheme.colorScheme.inversePrimary,
                     focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onPrimary,
                 ),
+                textStyle = TextStyle(fontSize = 12.sp),
                 trailingIcon = {
                     if (text.isNotEmpty()) {
                         IconButton(onClick = {
@@ -131,15 +143,17 @@ fun SearchBarMain(
                             Icon(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = "Clear",
-                                tint = Color.Black
+                                tint = MaterialTheme.colorScheme.inversePrimary,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
                 },
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(8.dp),
             )
         }
     }
+
 }
 
 @Composable
@@ -148,46 +162,59 @@ fun SearchResultList(context : Context, autocomplete: SuggestionResponse?, autoc
     val itemsPlaces = autocompletePlaces?.results?: emptyList()
     val displayedNames = mutableSetOf<String>()
 
-    LazyColumn(
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-            .widthIn(max = 400.dp)
+            .fillMaxWidth()
             .heightIn(max = 200.dp)
-            .background(Color.White)
+            .zIndex(10f)
     ) {
-        items(itemsGeneral) {itemGeneral ->
-            SearchResultItem(context, itemGeneral, viewModel)
-        }
-        items(itemsPlaces) { itemPlace ->
-            if (displayedNames.add(itemPlace.text.primary!!)) {
-                SearchResultItemPlace(context, itemPlace, viewModel)
+        LazyColumn(
+            modifier = Modifier
+                .widthIn(max = 355.dp)
+                .background(Color.White)
+                .zIndex(10f)
+        ) {
+            items(itemsGeneral) { itemGeneral ->
+                SearchResultItem(context, itemGeneral, viewModel)
+            }
+            items(itemsPlaces) { itemPlace ->
+                if (displayedNames.add(itemPlace.text.primary!!)) {
+                    SearchResultItemPlace(context, itemPlace, viewModel)
+                }
             }
         }
     }
 }
 
+@SuppressLint("NewApi")
 @Composable
 fun SearchResultItem(context : Context, item: Suggestion, viewModel: MenuScreenViewModel) {
 
     val itemName = item.name
     Card(
-        shape = RoundedCornerShape(0.dp),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.inversePrimary
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
+            .padding(vertical = 1.dp)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
                 viewModel.getMapBoxSelectedData(context, itemName)
             }
+            .zIndex(10f)
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
                 imageVector = Icons.Filled.SouthAmerica,
                 contentDescription = "Sinalization Icon",
-                tint = Color.Blue,
+                tint = Color.White,
                 modifier = Modifier
                     .padding(start = 10.dp)
+                    .align(alignment = Alignment.CenterVertically)
             )
             Text(
                 text = item.name ?: "",
@@ -199,6 +226,7 @@ fun SearchResultItem(context : Context, item: Suggestion, viewModel: MenuScreenV
     }
 }
 
+@SuppressLint("NewApi")
 @Composable
 fun SearchResultItemPlace(context : Context, item: AutocompleteResult, viewModel: MenuScreenViewModel) {
 
@@ -207,15 +235,19 @@ fun SearchResultItemPlace(context : Context, item: AutocompleteResult, viewModel
 
     val itemName = item.place?.name
     Card(
-        shape = RoundedCornerShape(0.dp),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.inversePrimary
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
+            .padding(vertical = 1.dp)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
                 if (itemName != null) {
                     viewModel.onSelectSearchListItem(context, lat, long, itemName)
                 }
             }
+            .zIndex(10f)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

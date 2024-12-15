@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -143,6 +144,9 @@ fun RegisterContent(
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                         .border(BorderStroke(2.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
                         ),
+                    textStyle = TextStyle(
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
             }
         }
@@ -165,7 +169,10 @@ fun RegisterContent(
                     modifier = Modifier
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                         .border(BorderStroke(2.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                    visualTransformation = PasswordVisualTransformation()
+                    visualTransformation = PasswordVisualTransformation(),
+                    textStyle = TextStyle(
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
             }
         }
@@ -189,7 +196,10 @@ fun RegisterContent(
                     modifier = Modifier
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                         .border(BorderStroke(2.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                    visualTransformation = PasswordVisualTransformation()
+                    visualTransformation = PasswordVisualTransformation(),
+                    textStyle = TextStyle(
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
 
                 )
             }

@@ -80,6 +80,9 @@ class MainActivityViewModel(private val context: Context) : ViewModel() {
     private fun saveThemeState(context: Context) {
         val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
         sharedPreferences.edit().putBoolean("mode", themeMode.value).apply()
+        val intent = Intent(context, MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
     }
 
     fun loadThemeState(context: Context) {

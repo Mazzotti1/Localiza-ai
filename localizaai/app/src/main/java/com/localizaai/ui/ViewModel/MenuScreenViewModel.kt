@@ -150,6 +150,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
     var isHoliday = mutableStateOf(false)
     var isLoadingPlaceInfo by mutableStateOf(false)
     var isLoadingSearch by mutableStateOf(false)
+
     fun loadThemeState(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val sharedPreferences =
@@ -162,7 +163,6 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             val sharedPreferences =
                 context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
             val token = sharedPreferences.getString("jwtToken", "")
-
             if (!token.isNullOrBlank()) {
                 try {
                     val jwt = JWT.decode(token)
@@ -480,8 +480,8 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
                 }.onFailure { exception ->
                     Log.d("PlacesApi", "Error: ${exception.message}")
                 }
-                if(autocompletePlaces.value?.results!!.isEmpty()){
-                        showSearchListItens.value = false
+                if (autocompletePlaces.value?.results?.isEmpty() == true) {
+                    showSearchListItens.value = false
                 }
             }
         }catch(e: Throwable){

@@ -9,18 +9,18 @@ import kotlinx.coroutines.withContext
 
 class PlacesRepository(private val context: Context) {
     private val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
-    private val apiService: ApiService
+    private lateinit var apiService: ApiService
 
-    init {
-        apiService = NetworkClient.create(context, getAuthToken())
+    private fun getApiService(): ApiService {
+        return NetworkClient.create(context, getAuthToken())
     }
 
     private fun getAuthToken(): String {
-        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
         return sharedPreferences.getString("jwtToken", "") ?: ""
     }
 
     suspend fun fetchPlacesData(lat: String, long: String, radius: String, sort:String): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.getPlacesData(lat, long, radius, sort)
@@ -40,6 +40,7 @@ class PlacesRepository(private val context: Context) {
     }
 
     suspend fun fetchSpecificPlacesData(id:String, language:String): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.getSpecificPlaceData(id, language)
@@ -59,6 +60,7 @@ class PlacesRepository(private val context: Context) {
     }
 
     suspend fun fetchPlaceByNameData(lat:String, long: String, name: String): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.getPlacesByNameData(lat,long,name)
@@ -78,6 +80,7 @@ class PlacesRepository(private val context: Context) {
     }
 
     suspend fun fetchPlacesTipsData(id:String): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.getPlaceTipsData(id)
@@ -97,6 +100,7 @@ class PlacesRepository(private val context: Context) {
     }
 
     suspend fun fetchPlaceAutocomplete(search: String, lat:String, long: String): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.getAutocompletePlaces(search,lat,long)
@@ -116,6 +120,7 @@ class PlacesRepository(private val context: Context) {
     }
 
     suspend fun getCategoriesScore(categoryType: String): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.getCategoriesScore(categoryType)

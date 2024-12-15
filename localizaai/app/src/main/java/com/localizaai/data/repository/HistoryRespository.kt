@@ -3,16 +3,24 @@ package com.localizaai.data.repository
 import android.content.Context
 import android.util.Log
 import com.localizaai.Model.HistoryRequest
+import com.localizaai.data.remote.ApiService
 import com.localizaai.data.remote.NetworkClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class HistoryRespository(private val context: Context) {
     private val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
-    private val authToken = sharedPreferences.getString("jwtToken", "").toString()
-    private val apiService = NetworkClient.create(context, authToken)
+
+    private fun getApiService(): ApiService {
+        return NetworkClient.create(context, getAuthToken())
+    }
+
+    private fun getAuthToken(): String {
+        return sharedPreferences.getString("jwtToken", "") ?: ""
+    }
 
     suspend fun fetchHistoryData(id: String): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.getHistoryData(id)
@@ -32,6 +40,7 @@ class HistoryRespository(private val context: Context) {
     }
 
     suspend fun setHistoryData(request : HistoryRequest): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.setHistory(request)
@@ -52,6 +61,7 @@ class HistoryRespository(private val context: Context) {
     }
 
     suspend fun fetchHistoryDataByLocation(lat: Double,long: Double,radius: String): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.getHistoryDataByLocation(lat,long,radius)

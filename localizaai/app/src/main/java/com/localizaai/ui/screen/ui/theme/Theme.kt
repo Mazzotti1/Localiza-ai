@@ -13,6 +13,7 @@ import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
     primary = DarkModeSecondary1,
+    inversePrimary = DarkModeHighlight,
     secondary = DarkModeSecondary2,
     background = DarkModeBackground,
     onPrimary = DarkModeText,
@@ -23,11 +24,13 @@ private val DarkColorScheme = darkColorScheme(
 
 private val LightColorScheme = lightColorScheme(
     primary = LightModeSecondary1,
+    inversePrimary = LightModeHighlight,
     secondary = LightModeSecondary2,
     background = LightModeBackground,
     onPrimary = LightModeText,
     onSecondary = LightModeSecondaryText,
-    onSurface = OffWhite
+    onSurface = OffWhite,
+    tertiary = LightModeBackgroundTopbar
 )
 
 @Composable

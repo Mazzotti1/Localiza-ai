@@ -2,6 +2,7 @@ package com.localizaai.ui.ViewModel
 
 import android.content.Context
 import android.content.res.Configuration
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -93,7 +94,7 @@ class LoginScreenViewModel(private val context: Context) : ViewModel() {
                         val sharedPreferences =
                             context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
                         token = status.token
-                        sharedPreferences.edit().putString("jwtToken", token).apply()
+                        sharedPreferences.edit().putString("jwtToken", status.token).apply()
 
                         navController.navigate("menu") {
                             popUpTo(navController.graph.startDestinationId)

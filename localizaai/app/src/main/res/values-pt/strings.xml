@@ -53,6 +53,7 @@
     <string name="unknown_name">Nome desconhecido</string>
     <string name="unknown">Desconhecido</string>
     <string name="rate">Nota</string>
+    <string name="queue">Tempo de fila aproximada</string>
     <string name="popularity">Popularidade</string>
     <string name="popular_hours">Horários populares</string>
     <string name="none">Nenhum</string>

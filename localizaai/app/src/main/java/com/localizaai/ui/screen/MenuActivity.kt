@@ -79,6 +79,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.app.ActivityCompat
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.location.LocationCallback
@@ -297,9 +298,9 @@ fun MenuContent(
 
 
     val properties = if (shouldChangeMapView) {
-        MapProperties(mapType = MapType.TERRAIN)
-    } else {
         MapProperties(mapType = MapType.HYBRID)
+    } else {
+        MapProperties(mapType = MapType.TERRAIN)
     }
 
     LaunchedEffect(viewModel.isDialogPlaceOpen.value) {
@@ -474,74 +475,95 @@ fun MenuContent(
                 }
             }
         }
-        if(!shouldChangeHideView){
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 12.dp)
-            ) {
-                Spacer(modifier = Modifier.height(64.dp))
-                SearchBarMain(
-                    viewModel,
-                    onSearch = { query ->
-                        performSearch(query, viewModel)
-                    },
-                    isFocused = isFocused,
-                    onFocusChanged = {
-                        isFocused = it
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (!shouldChangeHideView) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 12.dp)
+                        .zIndex(1f),
+                ) {
+                    Spacer(modifier = Modifier.height(64.dp))
+                    SearchBarMain(
+                        viewModel,
+                        onSearch = { query ->
+                            performSearch(query, viewModel)
+                        },
+                        isFocused = isFocused,
+                        onFocusChanged = {
+                            isFocused = it
+                        }
+                    )
+                    if (mapBoxAutocompletePlaces != null && autocompletePlaces != null && showSearchListItens) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        SearchResultList(
+                            context,
+                            mapBoxAutocompletePlaces,
+                            autocompletePlaces,
+                            viewModel
+                        )
                     }
-                )
-                if (mapBoxAutocompletePlaces != null && autocompletePlaces != null && showSearchListItens) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    SearchResultList(context, mapBoxAutocompletePlaces, autocompletePlaces,viewModel)
                 }
             }
-        }
 
-        if(viewModel.isLoadingPlaceInfo){
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                PlaceModalLoading()
+            if (viewModel.isLoadingPlaceInfo) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    PlaceModalLoading()
+                }
+            }
+
+            if (viewModel.isLoadingSearch) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SearchModalLoading()
+                }
+            }
+
+
+            if (showPlaceInfoDialog) {
+                viewModel.infosPlaceResponse?.let {
+                    PlaceModal(onDismiss = {
+                        viewModel.isDialogPlaceOpen.value = false
+                    }, placeInfo = it)
+                }
+            }
+
+            if (!shouldChangeHideView) {
+                HeatMapButton(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 16.dp, top = 170.dp)
+                        .zIndex(0f),
+                    onClick = { viewModel.onHeatMapChange() }
+                )
+                MapViewButton(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 16.dp, top = 250.dp)
+                        .zIndex(0f),
+                    onClick = { viewModel.onMapViewChange() }
+                )
+
+                ResetButton(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, bottom = 78.dp)
+                        .zIndex(0f),
+
+                    ) {
+                    val currentLatLng = viewModel.onResetButtonClick()
+                    cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
+                }
+
             }
         }
 
-        if(viewModel.isLoadingSearch){
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                SearchModalLoading()
-            }
-        }
-
-
-        if (showPlaceInfoDialog) {
-            viewModel.infosPlaceResponse?.let { PlaceModal(onDismiss = { viewModel.isDialogPlaceOpen.value = false }, placeInfo = it) }
-        }
-        if(!shouldChangeHideView){
-            HeatMapButton(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = 16.dp, top = 170.dp),
-                onClick = { viewModel.onHeatMapChange()}
-            )
-            MapViewButton(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = 16.dp, top = 250.dp),
-                onClick = { viewModel.onMapViewChange()}
-            )
-            ResetButton(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 16.dp, bottom = 78.dp)
-
-            ) {
-                val currentLatLng = viewModel.onResetButtonClick()
-                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
-            }
+        if (!shouldChangeHideView) {
             FilterButton(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -552,6 +574,7 @@ fun MenuContent(
                 viewModel
             )
         }
+
 
         if(!shouldChangeHideView){
             MapHideButton(

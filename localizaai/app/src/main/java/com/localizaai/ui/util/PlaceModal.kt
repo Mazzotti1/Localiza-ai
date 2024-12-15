@@ -36,6 +36,10 @@ import java.time.format.FormatStyle
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
+
+    val queueSpeed = calculatePossibleQueue(placeInfo)
+    val queueColor = getQueueColor(queueSpeed)
+
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
@@ -59,12 +63,25 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+
                     Text(
                         text = "${stringResource(id = R.string.rate)}: ${if (place.rating != 0.0) place.rating else stringResource(id = R.string.unknown)}",
                         style = MaterialTheme.typography.labelMedium,
                         textAlign = TextAlign.Center
                     )
-
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "${stringResource(id = R.string.queue)}:",
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                    text = calculatePossibleQueue(placeInfo),
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center,
+                        color = queueColor
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "${stringResource(id = R.string.popularity)}: ",
                         style = MaterialTheme.typography.titleMedium,
@@ -113,7 +130,7 @@ fun PlaceModal(onDismiss: () -> Unit, placeInfo: PlaceInfo) {
                                     .padding(horizontal = 32.dp)
                                     .fillMaxWidth(),
                                 thickness = 1.dp,
-                                color = Color.Black
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                         }
@@ -195,3 +212,46 @@ fun ShowPopularityStars(stars: Int?) {
     }
 }
 
+fun calculatePossibleQueue (placeInfo: PlaceInfo) : String {
+
+    val popularHours = placeInfo.place?.hours_popular ?: emptyList()
+    val matchScore = placeInfo.match_score ?: 0.0
+    val rating = placeInfo.place?.rating ?: 0.0
+    val popularity = placeInfo.place?.popularity ?: 0.0
+    val verified = placeInfo.place?.verified ?: false
+    val price = placeInfo.place?.price ?: 0
+
+    val weights = mapOf(
+        "popularHours" to 0.3,
+        "matchScore" to 0.2,
+        "rating" to 0.2,
+        "popularity" to 0.2,
+        "verified" to 0.1,
+        "price" to 0.1
+    )
+
+    val normalizedPopularHours = if (popularHours.isNotEmpty()) 1.0 else 0.0
+    val normalizedRating = rating / 10.0
+    val normalizedPrice = 1 - (price / 2.0)
+
+    val totalScore = (normalizedPopularHours * weights["popularHours"]!!) +
+            (matchScore * weights["matchScore"]!!) +
+            (normalizedRating * weights["rating"]!!) +
+            (popularity * weights["popularity"]!!) +
+            ((if (verified) 1.0 else 0.0) * weights["verified"]!!) +
+            (normalizedPrice * weights["price"]!!)
+
+    return when {
+        totalScore > 0.95 -> "Devagar"
+        totalScore > 0.6 -> "Média"
+        else -> "Rápida"
+    }
+}
+
+fun getQueueColor(queueSpeed: String): Color {
+    return when (queueSpeed) {
+        "Rápida" -> Color.Green
+        "Média" -> Color.Yellow
+        else -> Color.Red
+    }
+}

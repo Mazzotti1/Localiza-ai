@@ -11,18 +11,19 @@ import kotlinx.coroutines.withContext
 
 class MapboxRepository(private val context: Context) {
     private val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
-    private val apiService: ApiService
     private val mapboxAuthToken = context.getString(R.string.mapbox_api)
-    init {
-        apiService = NetworkClient.create(context, getAuthToken())
+
+    private fun getApiService(): ApiService {
+        return NetworkClient.create(context, getAuthToken())
     }
 
     private fun getAuthToken(): String {
-        val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
         return sharedPreferences.getString("jwtToken", "") ?: ""
     }
 
+
     suspend fun fetchMapBoxAutocompletes(query: String): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.getMapBoxAutocomplete(query,1,"[GENERATED-UUID]",mapboxAuthToken)
@@ -42,6 +43,7 @@ class MapboxRepository(private val context: Context) {
     }
 
     suspend fun fetchMapBoxPlaceData(query: String): Result<String> {
+        val apiService = getApiService()
         return try {
             val response = withContext(Dispatchers.IO) {
                 apiService.getMapBoxSelectedData(query,1,mapboxAuthToken)

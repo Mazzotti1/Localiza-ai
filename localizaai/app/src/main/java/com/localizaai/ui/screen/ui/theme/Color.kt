@@ -33,6 +33,7 @@ val DarkModeSecundaryText = Color(0xFFBDBDBD)
 
 //Light mode
 
+val LightModeBackgroundTopbar = Color(0xFFE5E5E5)
 val LightModeBackground = Color(0xFFF9FAFB)
 val LightModeHighlight = Color(0xFF007BFF)
 val LightModeSecondary1 = Color(0xFF00FFBA)

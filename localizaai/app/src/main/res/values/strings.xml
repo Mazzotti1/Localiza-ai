@@ -53,6 +53,7 @@
     <string name="unknown_name">Unknown Name</string>
     <string name="unknown">Unknown</string>
     <string name="rate">Rate</string>
+    <string name="queue">Approximate queue time</string>
     <string name="popularity">Popularity</string>
     <string name="popular_hours">Popular Hours</string>
     <string name="none">None</string>

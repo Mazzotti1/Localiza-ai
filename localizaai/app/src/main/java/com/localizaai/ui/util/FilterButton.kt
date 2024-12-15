@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.localizaai.ui.ViewModel.MenuScreenViewModel
 
 @Composable
@@ -50,15 +51,15 @@ fun FilterButton(
     Box(
         modifier = modifier
             .size(56.dp)
-            .background(MaterialTheme.colorScheme.background, shape = CircleShape)
-            .border(2.dp, Color.Gray, shape = CircleShape)
+            .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
+            .border(2.dp, MaterialTheme.colorScheme.primary, shape = CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Default.FilterAlt,
             contentDescription = "Filter distance",
-            tint = Color.Gray,
+            tint = Color.Black,
             modifier = Modifier.size(24.dp)
         )
     }
@@ -69,7 +70,7 @@ fun FilterButton(
                 .fillMaxWidth()
                 .padding(top = 40.dp)
                 .height(200.dp)
-                .background(MaterialTheme.colorScheme.background, shape = RoundedCornerShape(38.dp)),
+                .background(MaterialTheme.colorScheme.background, shape = RoundedCornerShape(30.dp)),
         ) {
             Column(
                 modifier = Modifier

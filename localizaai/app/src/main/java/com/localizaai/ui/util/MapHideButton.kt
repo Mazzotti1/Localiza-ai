@@ -25,15 +25,15 @@ fun MapHideButton(
     Box(
         modifier = modifier
             .size(56.dp)
-            .background(MaterialTheme.colorScheme.background, shape = CircleShape)
-            .border(2.dp, Color.Gray, shape = CircleShape)
+            .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
+            .border(2.dp, MaterialTheme.colorScheme.primary, shape = CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Default.RemoveRedEye,
             contentDescription = "Map Button",
-            tint = Color.Gray,
+            tint = Color.Black,
             modifier = Modifier.size(24.dp)
         )
     }

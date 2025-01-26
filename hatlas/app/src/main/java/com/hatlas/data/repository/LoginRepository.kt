@@ -27,7 +27,6 @@ class LoginRepository(private val context: Context) {
             LoginResult(null, errorBody ?: "HttpException")
 
         } catch (e: Throwable) {
-            println("Erro servidor")
             LoginResult(null, "Throwable")
         }
     }

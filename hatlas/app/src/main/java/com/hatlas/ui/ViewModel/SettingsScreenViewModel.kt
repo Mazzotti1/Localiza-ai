@@ -44,7 +44,7 @@ class SettingsScreenViewModel(private val context: Context) : ViewModel() {
     val themeMode = mutableStateOf(sharedPreferences.getBoolean("mode", true))
     var username by mutableStateOf("")
     var roleName by mutableStateOf("")
-    val language = mutableStateOf(sharedPreferences.getString("language", "en") ?: "en")
+    val language = mutableStateOf(sharedPreferences.getString("language", "pt") ?: "pt")
     private val languages = mutableListOf("en", "pt")
     var hasToken = mutableStateOf(false)
 

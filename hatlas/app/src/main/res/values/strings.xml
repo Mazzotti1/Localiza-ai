@@ -5,8 +5,8 @@
     <string name="start">Start</string>
 
     <!--    Register-->
-    <string name="name_title">Name</string>
-    <string name="name_placeholder">Type your name</string>
+    <string name="name_title">Nickname</string>
+    <string name="name_placeholder">Type your nickname</string>
     <string name="password_title">Password</string>
     <string name="repassword_title">Password confirmation</string>
     <string name="password_placeholder">Type your password</string>
@@ -17,6 +17,7 @@
     <string name="hasnt_account">I don\'t have a registered account!</string>
     <string name="fill_all_fields">Please complete all the fields</string>
     <string name="passwords_match">Passwords aren\'t the same</string>
+    <string name="invalid_nickname">Nickname cannot contain spaces or special characters</string>
 
     <!--    Settings-->
     <string name="settings_title">Settings</string>

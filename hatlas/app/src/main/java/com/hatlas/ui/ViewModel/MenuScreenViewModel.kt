@@ -688,7 +688,7 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             val latitude = place.geocodes?.main?.latitude ?: 0.0
             val longitude = place.geocodes?.main?.longitude ?: 0.0
             val score = place.score ?: 0.1
-
+            Log.d("HEATMAP", "${score}")
             val adjustedScore = if (currentHour >= 23 || currentHour < 6) {
                 score * 0.5
             } else if (score > threshold) {
@@ -696,7 +696,6 @@ class MenuScreenViewModel(private val context: Context) : ViewModel() {
             } else {
                 score * 0.5
             }
-
             WeightedLatLng(LatLng(latitude, longitude), adjustedScore)
         }
 

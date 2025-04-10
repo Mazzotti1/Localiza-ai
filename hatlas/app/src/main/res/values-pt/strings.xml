@@ -5,8 +5,8 @@
     <string name="start">Entrar</string>
 
     <!--    Register-->
-    <string name="name_title">Nome</string>
-    <string name="name_placeholder">Digite seu nome</string>
+    <string name="name_title">Apelido</string>
+    <string name="name_placeholder">Digite seu apelido</string>
     <string name="password_title">Senha</string>
     <string name="repassword_title">Confirmação da senha</string>
     <string name="password_placeholder">Digite sua senha</string>
@@ -17,6 +17,7 @@
     <string name="hasnt_account">Ainda não tenho uma conta registrada!</string>
     <string name="fill_all_fields">Por favor, preencha todos os campos</string>
     <string name="passwords_match">As senhas não coincidem</string>
+    <string name="invalid_nickname">O apelido não pode conter espaços ou caracteres especiais</string>
 
     <!--    Settings-->
     <string name="settings_title">Configurações</string>

@@ -88,12 +88,14 @@ class AboutScreenViewModel(private val context: Context) : ViewModel() {
     @SuppressLint("QueryPermissionsNeeded")
     fun onSocialPressed(url: String, context: Context) {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         if (intent.resolveActivity(context.packageManager) != null) {
             context.startActivity(intent)
         } else {
             Toast.makeText(context, context.getString(R.string.social_error), Toast.LENGTH_SHORT).show()
         }
     }
+
 
     fun loadWeatherProps(context: Context, weatherData : WeatherRequest){
         val sharedPreferences = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)

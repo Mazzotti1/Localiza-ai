@@ -61,6 +61,7 @@ class RegisterScreenViewModel(private val context: Context) : ViewModel() {
 
     fun register(context: Context, navController: NavController) {
         val resources = context.resources
+        val regex = Regex("^[a-zA-Z0-9]+$")
         if (name.isBlank() || password.isBlank() || rePassword.isBlank()) {
             Toast.makeText(
                 context,
@@ -75,6 +76,16 @@ class RegisterScreenViewModel(private val context: Context) : ViewModel() {
             Toast.makeText(
                 context,
                 resources.getString(R.string.passwords_match),
+                Toast.LENGTH_SHORT
+            ).show()
+            isLoading = false
+            return
+        }
+
+        if (!regex.matches(name)) {
+            Toast.makeText(
+                context,
+                resources.getString(R.string.invalid_nickname),
                 Toast.LENGTH_SHORT
             ).show()
             isLoading = false

@@ -9,6 +9,7 @@ import com.google.gson.JsonParser
 import io.github.cdimascio.dotenv.dotenv
 import okhttp3.*
 import okhttp3.Response
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.MessageSource
 import java.io.IOException
@@ -35,6 +36,7 @@ class FoursquareApi @Autowired constructor(
     val apiKey = dotenv["FOURSQUARE_API_KEY"]!!
     val apiCategoryKey = dotenv["FOURSQUARE_API_CATEGORY"]!!
     //sort can be = DISTANCE / RELEVANCE / RATING / POPULARITY
+    private val logger = LoggerFactory.getLogger(FoursquareApi::class.java)
 
     private fun parseFoursquareResponse(jsonString: String): List<FoursquarePlace> {
         val response = gson.fromJson(jsonString, FoursquareResponse::class.java)

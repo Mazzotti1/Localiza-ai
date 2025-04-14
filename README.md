@@ -56,7 +56,7 @@ A API foi desenvolvida com foco em segurança, utilizando criptografia de ponta 
 </table>
 <table>
     <td>
-      <a href="https://github.com/Mazzotti1/Hatlas/blob/main/LICENSE">Licence</a>
+      <a href="https://github.com/Mazzotti1/Hatlas?tab=MIT-1-ov-file#readme">Licence</a>
     </td>
 </table>
 
